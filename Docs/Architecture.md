@@ -1,8 +1,12 @@
-# Architecture and next steps
+FemmeTrack
+Version: v0.1
 
-Flow: regimen history + injection corrections -> schedule resolver -> effective
-dose events -> EstradiolPK -> E2 and dE2/dt graphs. Check-ins join that timeline
-by timestamp; they never modify the pharmacokinetic model.
+# Architecture
+
+Tabs: E2 levels (E2 graph, dE2/dt graph, wellbeing graph mapped onto these level graphs), Wellbeing check-in (questions that user gets every day via push notification), regimen specifications (correct all the data set during initial setup phase, mark past and dosages either as taken (just confirm since it's the default), forgotten or delayed (enter time when the dosage will be/was taken))
+
+Flow: initial setup (enter regimen - esther, route, dosage intake frequency; how many questions do you need in a daily check-in: mark questions with checkboxes, when to send push notifications) -> first tab 
+
 
 ## Event rules
 
@@ -20,17 +24,11 @@ silently assuming steady state.
 ## Wellbeing
 
 Three independent 0–10 ratings: mood, libido, energy. Require deliberate answers
-before saving, timestamp them, and align with modeled E2 and rate of change.
+before saving, timestamp them (default=now), and align with modeled E2 and rate of change.
 Local reminders are opt-in with neutral lock-screen text. MADRS-S is a later,
 separate feature requiring wording, rights, recall-period and support-flow review.
 
-## Implementation order
+## Notes
 
-1. Evidence dossier and versioned enanthate/subcutaneous model specification.
-2. Schedule resolution and local persistence with historical regimen versions.
-3. Model implementation and reference-data validation.
-4. Graphs, event editing, deliberate check-in input and storage.
-5. Opt-in local notification settings.
-
-Blood tests, calibration, other formulations/routes and MADRS-S are outside v1.
+Blood tests, calibration, other formulations/routes and MADRS-S are outside v0.1.
 Do not display fabricated curves or numerical certainty while research is pending.
