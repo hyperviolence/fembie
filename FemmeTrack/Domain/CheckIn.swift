@@ -1,0 +1,11 @@
+import Foundation
+
+/// Complete deliberate responses only; UI slider defaults must not become answers.
+struct CheckIn: Identifiable, Codable {
+    let id: UUID
+    let recordedAt: Date
+    let mood: Int
+    let libido: Int
+    let energy: Int
+    // TODO: Validate each response in 0...10 before saving.
+}

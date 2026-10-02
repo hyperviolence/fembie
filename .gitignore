@@ -1,0 +1,6 @@
+# Local build products and user settings
+.DS_Store
+.build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
