@@ -1,12 +1,17 @@
 import SwiftUI
 
 struct RegimenView: View {
+    @State private var selectedEster: Ester = Ester.allCases.first!
     @State private var dose = ""
     @State private var intervalDays = ""
     @State private var firstInjection = Date()
     @State private var showSaveAlert = false
     @State private var saveAlertMessage = ""
     @State private var currentRegimen: Regimen?
+    
+    init(selectedEster: Ester? = nil) {
+        _selectedEster = State(initialValue: selectedEster ?? Ester.allCases.first!)
+    }
     
     private var parsedDose: Double? { Double(dose) }
     private var parsedIntervalDays: Double? { Double(intervalDays) }
@@ -16,7 +21,11 @@ struct RegimenView: View {
         NavigationStack {
             Form {
                 Section("Estradiol regimen") {
-                    LabeledContent("Formulation", value: "Estradiol Enanthate (EEn)")
+                    Picker("Formulation", selection: $selectedEster) {
+                        ForEach(Ester.allCases) { ester in
+                            Text(ester.displayName).tag(ester)
+                        }
+                    }
                     LabeledContent("Route", value: "Subcutaneous")
                     TextField("Dose (mg)", text: $dose)
                         .keyboardType(.decimalPad)
@@ -92,3 +101,4 @@ struct RegimenView: View {
         }
     }
 }
+
