@@ -2,16 +2,14 @@ import SwiftUI
 
 struct RegimenView: View {
     @State private var selectedEster: Ester = Ester.allCases.first!
+    @State private var selectedRoute: Route = Route.subcutaneous
     @State private var dose = ""
     @State private var intervalDays = ""
     @State private var firstInjection = Date()
     @State private var showSaveAlert = false
     @State private var saveAlertMessage = ""
     @State private var currentRegimen: Regimen?
-    
-    init(selectedEster: Ester? = nil) {
-        _selectedEster = State(initialValue: selectedEster ?? Ester.allCases.first!)
-    }
+
     
     private var parsedDose: Double? { Double(dose) }
     private var parsedIntervalDays: Double? { Double(intervalDays) }
@@ -26,7 +24,11 @@ struct RegimenView: View {
                             Text(ester.displayName).tag(ester)
                         }
                     }
-                    LabeledContent("Route", value: "Subcutaneous")
+                    Picker("Route", selection: $selectedRoute) {
+                        ForEach(EsterRoutes.getRoutes(ester: selectedEster)) { route in
+                            Text(route.displayName).tag(route)
+                        }
+                    }
                     TextField("Dose (mg)", text: $dose)
                         .keyboardType(.decimalPad)
                     TextField("Interval (days)", text: $intervalDays)
@@ -77,6 +79,12 @@ struct RegimenView: View {
                 }
             }
             .navigationTitle("Regimen")
+            .onChange(of: selectedEster) { newEster in
+                let routes = EsterRoutes.getRoutes(ester: newEster)
+                if let first = routes.first {
+                    selectedRoute = first
+                }
+            }
             .task { await loadCurrentRegimen() }
             .alert("Save Regimen", isPresented: $showSaveAlert) {
                 Button("OK", role: .cancel) { }
