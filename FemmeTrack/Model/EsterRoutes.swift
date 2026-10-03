@@ -1,7 +1,7 @@
 import Foundation
 
 struct EsterRoutes {
-    static func getRoutes(ester: Ester) -> [Route] {
+    static func getRoutes(ester: EstradiolType) -> [EstradiolRoute] {
         switch ester {
         case .estradiolEnanthate, .estradiolValerate, .estradiolUndecyclate:
             return [.subcutaneous, .intramuscular]
