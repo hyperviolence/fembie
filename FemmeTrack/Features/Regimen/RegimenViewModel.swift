@@ -5,7 +5,7 @@ import Observation
 @Observable
 final class RegimenViewModel {
     var selectedEster: EstradiolType = .estradiolEnanthate
-    var selectedRoute: EstradiolRoute = .subcutaneous
+    var selectedRoute: EstradiolRoute = .intramuscular
     var dose = ""
     var intervalDays = ""
     var firstInjection: Date
@@ -175,7 +175,7 @@ final class RegimenViewModel {
         guard let days = parseNumber(intervalDays) else {
             throw RegimenValidationError.invalidInterval
         }
-        return try Regimen(id: UUID(), ester: selectedEster.displayName, doseMilligramsOfEster: dose,
+        return try Regimen(id: UUID(), ester: selectedEster.displayName, doseMilligramsOfEster: dose, route: selectedRoute, 
                            intervalHours: days * 24, effectiveFrom: firstInjection,
                            effectiveUntil: nil, timeZoneIdentifier: TimeZone.current.identifier)
     }

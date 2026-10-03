@@ -5,5 +5,8 @@ let package = Package(
     name: "EstradiolPK",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [.library(name: "EstradiolPK", targets: ["EstradiolPK"])],
-    targets: [.target(name: "EstradiolPK")]
+    targets: [
+        .target(name: "EstradiolPK"),
+        .testTarget(name: "EstradiolPKTests", dependencies: ["EstradiolPK"])
+    ]
 )

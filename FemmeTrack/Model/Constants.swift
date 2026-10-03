@@ -23,7 +23,7 @@ nonisolated enum EstradiolType: String, Identifiable, CaseIterable {
     
 }
 
-nonisolated enum EstradiolRoute: String, Identifiable, CaseIterable {
+nonisolated enum EstradiolRoute: String, Identifiable, CaseIterable, Decodable, Encodable {
     case subcutaneous = "subq"
     case intramuscular = "im"
     case transdermal = "tdermal"

@@ -7,7 +7,7 @@ struct FileTrackingRepositoryTests {
         URL.temporaryDirectory.appending(path: "FemmeTrackTests-\(UUID())", directoryHint: .isDirectory)
     }
     private func regimen(dose: Double) throws -> Regimen {
-        try Regimen(id: UUID(), ester: "EEn", doseMilligramsOfEster: dose, intervalHours: 168,
+        try Regimen(id: UUID(), ester: "EEn", doseMilligramsOfEster: dose, route: .intramuscular, intervalHours: 168,
                     effectiveFrom: Date(timeIntervalSince1970: 1_700_000_000), effectiveUntil: nil,
                     timeZoneIdentifier: "UTC")
     }

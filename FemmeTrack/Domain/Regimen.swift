@@ -5,16 +5,18 @@ nonisolated struct Regimen: Identifiable, Codable, Sendable {
     let id: UUID
     var ester: String
     var doseMilligramsOfEster: Double
+    var route: EstradiolRoute
     var intervalHours: Double
     var effectiveFrom: Date
     var effectiveUntil: Date?
     var timeZoneIdentifier: String
     var injectionEvents: [InjectionEvent] = []
 
-    init(id: UUID, ester: String, doseMilligramsOfEster: Double, intervalHours: Double,
+    init(id: UUID, ester: String, doseMilligramsOfEster: Double, route: EstradiolRoute, intervalHours: Double,
          effectiveFrom: Date, effectiveUntil: Date?, timeZoneIdentifier: String) throws {
         self.id = id
         self.ester = ester
+        self.route = route
         self.doseMilligramsOfEster = doseMilligramsOfEster
         self.intervalHours = intervalHours
         self.effectiveFrom = effectiveFrom

@@ -3,7 +3,7 @@ import SwiftUI
 struct RegimenFormSection: View {
     @Bindable var model: RegimenViewModel
     private let enabledTypes: Set<EstradiolType> = [.estradiolEnanthate]
-    private let enabledRoutes: Set<EstradiolRoute> = [.subcutaneous]
+    private let enabledRoutes: Set<EstradiolRoute> = [.intramuscular]
 
     var body: some View {
         Section {

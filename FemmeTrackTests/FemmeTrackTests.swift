@@ -6,7 +6,7 @@ struct FemmeTrackTests {
     private let start = Date(timeIntervalSince1970: 1_700_000_000)
 
     private func regimen(dose: Double = 2, hours: Double = 24, until: Date? = nil) throws -> Regimen {
-        try Regimen(id: UUID(), ester: "Estradiol Enanthate (EEn)", doseMilligramsOfEster: dose,
+        try Regimen(id: UUID(), ester: "Estradiol Enanthate (EEn)", doseMilligramsOfEster: dose, route: .intramuscular,
                     intervalHours: hours, effectiveFrom: start, effectiveUntil: until,
                     timeZoneIdentifier: "Europe/Istanbul")
     }
