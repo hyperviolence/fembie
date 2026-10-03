@@ -10,7 +10,7 @@ The app links the local `Packages/EstradiolPK` Swift package; no external depend
 - `FemmeTrack/Domain`: regimen history, injection overrides and quick check-ins.
 - `FemmeTrack/Services`: scheduling and local notification contracts.
 - `FemmeTrack/Persistence`: local repository contract.
-- `Packages/EstradiolPK`: UI-independent model inputs and outputs; enanthate/subcutaneous model stub.
+- `Packages/EstradiolPK`: UI-independent model inputs and outputs; enanthate intramuscular and subcutaneous prediction models.
 - `Docs/Architecture.md`: behavior and implementation boundaries.
 
 ## Current status

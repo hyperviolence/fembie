@@ -45,10 +45,10 @@ struct LevelsPredictionCalculatorTests {
         #expect(model.message == nil)
         input.route = .subcutaneous
         await model.refresh(input: LevelsPredictionInput(regimen: input), now: start)
-        #expect(model.current == nil)
-        #expect(model.points.isEmpty)
-        #expect(model.modelIdentifier == nil)
-        #expect(model.message != nil)
+        #expect(model.current != nil)
+        #expect(model.points.count == 673)
+        #expect(model.modelIdentifier == EnanthateSubcutaneousModel().modelIdentifier)
+        #expect(model.message == nil)
         input.route = .intramuscular
         input.ester = "Estradiol Valerate (EV)"
         await model.refresh(input: LevelsPredictionInput(regimen: input), now: start)
@@ -58,12 +58,25 @@ struct LevelsPredictionCalculatorTests {
 
     @Test func unsupportedRoutesCannotUseIntramuscularCalculation() async throws {
         var input = try regimen()
-        for route in EstradiolRoute.allCases where route != .intramuscular {
+        for route in EstradiolRoute.allCases where route != .intramuscular && route != .subcutaneous {
             input.route = route
             await #expect(throws: LevelsPredictionError.self) {
                 try await LevelsPredictionCalculator().predict(regimen: input, now: start)
             }
         }
+    }
+
+    @Test func subcutaneousPredictionsUseAdjustedModel() async throws {
+        var input = try regimen()
+        input.route = .subcutaneous
+        let now = start.addingTimeInterval(3 * 86_400)
+        let points = try await LevelsPredictionCalculator().predict(regimen: input, now: now)
+        let current = try #require(points.first { $0.timestamp == now })
+        let expected = try EnanthateSubcutaneousModel().predict(
+            doses: [DoseAdministration(timestamp: start, milligramsOfEster: 4)], at: [now])
+        #expect(abs(current.estradiolPicogramsPerMilliliter - expected[0].estradiolPicogramsPerMilliliter) < 1e-9)
+        #expect(abs(current.rateOfChangePicogramsPerMilliliterPerHour
+            - expected[0].rateOfChangePicogramsPerMilliliterPerHour) < 1e-9)
     }
 
     @Test func correctionsInvalidatePlotIdentity() throws {

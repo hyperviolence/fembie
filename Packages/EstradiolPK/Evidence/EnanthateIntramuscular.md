@@ -21,7 +21,8 @@ The MVP sums single-dose responses from saved history and projected schedules.
 It does not assume steady state, estimate endogenous baseline, calibrate to
 blood tests, or include uncertainty bands. Levels automatically selects this
 model only when the saved regimen specifies enanthate and the intramuscular
-route. Unsupported ester/route combinations show an unavailable-model state.
+route. EEn subcutaneous uses the separate [SC adaptation](EnanthateSubcutaneous.md).
+Unsupported ester/route combinations show an unavailable-model state.
 
 Tests verify agreement with JavaScript single-dose and repeated-dose fixtures,
 check the derivative against finite differences, and exercise skipped and moved

@@ -4,9 +4,12 @@ import EstradiolPK
 /// Runs numerical work off the main actor; never changes saved regimens.
 actor LevelsPredictionCalculator {
     nonisolated static func model(for regimen: Regimen) -> (any PredictionModel)? {
-        guard regimen.ester == EstradiolType.estradiolEnanthate.displayName,
-              regimen.route == .intramuscular else { return nil }
-        return EnanthateIntramuscularModel()
+        guard regimen.ester == EstradiolType.estradiolEnanthate.displayName else { return nil }
+        switch regimen.route {
+        case .intramuscular: return EnanthateIntramuscularModel()
+        case .subcutaneous: return EnanthateSubcutaneousModel()
+        default: return nil
+        }
     }
 
     func predict(regimen: Regimen, now: Date) throws -> [PredictionPoint] {

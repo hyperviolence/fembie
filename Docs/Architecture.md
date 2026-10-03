@@ -124,12 +124,17 @@ response calculation and include planned doses only after their effective
 timestamps. Solid and dashed lines distinguish historical estimates and future
 projections, with a rule marking now. Levels displays both E2 and dE2/dt.
 
-## EEn intramuscular model
+## EEn intramuscular and subcutaneous models
 
-The only supported plotting model is `EnanthateIntramuscularModel`, selected for
-saved estradiol enanthate with the intramuscular route. Unsupported esters or
-routes do not fall back to it. The older subcutaneous placeholder is not selected
-by Levels and is not a supported prediction model.
+Levels selects `EnanthateIntramuscularModel` for saved estradiol enanthate with
+the intramuscular route, and `EnanthateSubcutaneousModel` for the subcutaneous
+route. Unsupported esters or routes do not fall back to either model.
+
+The subcutaneous model copies the IM calculation with `k1 = 0.119 * 0.9 = 0.1071`
+per day; `d`, `k2`, and `k3` retain the IM values. Its identifier is
+`fembie/enanthate-subcutaneous/im-k1-90-percent/v1`. The 10% reduction is a
+requested modeling assumption, not an independently fitted SC parameter set.
+See `Packages/EstradiolPK/Evidence/EnanthateSubcutaneous.md` for details.
 
 The numerical implementation is a native Swift port of the single-dose
 three-compartment response and EEn IM coefficients supplied in Estrannaise's
