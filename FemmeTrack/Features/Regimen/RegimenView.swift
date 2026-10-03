@@ -17,14 +17,29 @@ struct RegimenView: View {
                 }
                 RegimenFormSection(model: model)
                 RegimenSummarySection(regimen: model.savedRegimen, title: model.regimenTitle)
-                InjectionEventsSection(model: model)
+                Section("Injection events") {
+                    if model.hasMorePast {
+                        Button("Show more past injections…", action: model.showMorePast)
+                    }
+                    ForEach(model.visibleEvents) { event in
+                        InjectionEventRow(event: event, model: model)
+                    }
+                    if model.visibleEvents.isEmpty {
+                        ContentUnavailableView("No scheduled injections", systemImage: "calendar",
+                                               description: Text("Save a regimen to generate your injection schedule."))
+                    }
+                    if model.hasMoreFuture {
+                        Button("Show more future injections…") { Task { await model.showMoreFuture() } }
+                    }
+                }
+                .disabled(model.isBusy || !model.hasLoaded)
             }
             .navigationTitle("Regimen")
             .task(id: scenePhase) {
-                if scenePhase == .active { await model.load() }
-            }
-            .task {
-                // Keep upcoming/assumed status current while the screen remains open.
+                guard scenePhase == .active else { return }
+                await model.load()
+
+                // Refresh while active; a phase change cancels this task.
                 while !Task.isCancelled {
                     do { try await Task.sleep(for: .seconds(30)) }
                     catch { return }

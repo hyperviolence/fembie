@@ -2,11 +2,10 @@ import SwiftUI
 
 struct InjectionEventRow: View {
     let event: InjectionEvent
-    let now: Date
-    let setAdjustment: (InjectionAdjustment) -> Void
+    @Bindable var model: RegimenViewModel
 
     var body: some View {
-        let status = InjectionStatus(event: event, now: now)
+        let status = InjectionStatus(event: event, now: model.now)
         VStack(alignment: .leading) {
             Text(event.scheduledAt, format: .dateTime.day().month().year().hour().minute())
                 .font(.headline)
@@ -17,16 +16,24 @@ struct InjectionEventRow: View {
             }
             ViewThatFits(in: .horizontal) {
                 HStack {
-                    Button("Taken") { setAdjustment(.confirmed) }
-                        .disabled(event.scheduledAt > now || event.adjustment == .confirmed)
-                    Button("Skipped") { setAdjustment(.skipped) }
+                    Button("Taken") {
+                        Task { await model.setAdjustment(eventID: event.id, to: .confirmed) }
+                    }
+                        .disabled(event.scheduledAt > model.now || event.adjustment == .confirmed)
+                    Button("Skipped") {
+                        Task { await model.setAdjustment(eventID: event.id, to: .skipped) }
+                    }
                         .disabled(event.adjustment == .skipped)
                     Button("Delayed") { }.disabled(true)
                 }
                 VStack(alignment: .leading) {
-                    Button("Taken") { setAdjustment(.confirmed) }
-                        .disabled(event.scheduledAt > now || event.adjustment == .confirmed)
-                    Button("Skipped") { setAdjustment(.skipped) }
+                    Button("Taken") {
+                        Task { await model.setAdjustment(eventID: event.id, to: .confirmed) }
+                    }
+                        .disabled(event.scheduledAt > model.now || event.adjustment == .confirmed)
+                    Button("Skipped") {
+                        Task { await model.setAdjustment(eventID: event.id, to: .skipped) }
+                    }
                         .disabled(event.adjustment == .skipped)
                     Button("Delayed") { }.disabled(true)
                 }

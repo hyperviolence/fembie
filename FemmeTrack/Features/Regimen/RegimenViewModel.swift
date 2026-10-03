@@ -37,7 +37,10 @@ final class RegimenViewModel {
     var validationMessage: String? {
         do {
             let draft = try makeDraft()
-            _ = try schedule.eventCount(for: draft, through: schedule.horizon(for: draft, now: now))
+            let endDate = schedule.horizon(for: draft, now: now)
+
+            // Check schedule validity; the count itself isn't needed here.
+            _ = try schedule.eventCount(for: draft, through: endDate)
             return nil
         } catch { return error.localizedDescription }
     }
@@ -58,9 +61,12 @@ final class RegimenViewModel {
         if future.count > futureCount { return true }
         guard regimen.injectionEvents.count < InjectionSchedule.maximumEventCount,
               let last = regimen.injectionEvents.last else { return false }
-        return regimen.effectiveUntil.map {
-            last.scheduledAt.addingTimeInterval(regimen.intervalHours * 3600) < $0
-        } ?? true
+        let intervalSeconds = regimen.intervalHours * 3600
+        let nextInjection = last.scheduledAt.addingTimeInterval(intervalSeconds)
+        if let until = regimen.effectiveUntil {
+            return nextInjection < until
+        }
+        return true
     }
     var regimenTitle: String {
         guard let savedRegimen else { return "Saved regimen" }
@@ -146,10 +152,16 @@ final class RegimenViewModel {
         isBusy = true
         defer { isBusy = false }
         do {
-            let extraCount = min(3, InjectionSchedule.maximumEventCount - regimen.injectionEvents.count)
-            let lastIndex = (last.scheduledAt.timeIntervalSince(regimen.effectiveFrom) / (regimen.intervalHours * 3600)).rounded()
-            let end = regimen.effectiveFrom.addingTimeInterval((lastIndex + Double(extraCount)) * regimen.intervalHours * 3600)
-            let extended = try schedule.extending(regimen, through: end)
+            let remainingCapacity = InjectionSchedule.maximumEventCount - regimen.injectionEvents.count
+            let extraCount = min(3, remainingCapacity)
+            let intervalSeconds = regimen.intervalHours * 3600
+            let elapsedSeconds = last.scheduledAt.timeIntervalSince(regimen.effectiveFrom)
+            let lastIndex = (elapsedSeconds / intervalSeconds).rounded()
+            let nextIndex = lastIndex + Double(extraCount)
+            let hoursFromFirstInjection = nextIndex * regimen.intervalHours
+            let secondsFromFirstInjection = hoursFromFirstInjection * 3600
+            let endDate = regimen.effectiveFrom.addingTimeInterval(secondsFromFirstInjection)
+            let extended = try schedule.extending(regimen, through: endDate)
             try await repository.save(extended)
             savedRegimen = extended
             futureCount += 3
@@ -157,10 +169,10 @@ final class RegimenViewModel {
     }
 
     private func makeDraft() throws -> Regimen {
-        guard let dose = parseNumber(dose), dose.isFinite, dose > 0 else {
+        guard let dose = parseNumber(dose) else {
             throw RegimenValidationError.invalidDose
         }
-        guard let days = parseNumber(intervalDays), days.isFinite, days > 0 else {
+        guard let days = parseNumber(intervalDays) else {
             throw RegimenValidationError.invalidInterval
         }
         return try Regimen(id: UUID(), ester: selectedEster.displayName, doseMilligramsOfEster: dose,

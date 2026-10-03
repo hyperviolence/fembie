@@ -31,9 +31,15 @@ nonisolated struct Regimen: Identifiable, Codable, Sendable {
               (intervalHours * 3600).isFinite else {
             throw RegimenValidationError.invalidInterval
         }
-        guard effectiveFrom.timeIntervalSinceReferenceDate.isFinite,
-              effectiveUntil.map({ $0.timeIntervalSinceReferenceDate.isFinite && $0 > effectiveFrom }) ?? true,
-              TimeZone(identifier: timeZoneIdentifier) != nil else {
+        guard effectiveFrom.timeIntervalSinceReferenceDate.isFinite else {
+            throw RegimenValidationError.invalidSchedule
+        }
+        if let until = effectiveUntil {
+            guard until.timeIntervalSinceReferenceDate.isFinite, until > effectiveFrom else {
+                throw RegimenValidationError.invalidSchedule
+            }
+        }
+        guard TimeZone(identifier: timeZoneIdentifier) != nil else {
             throw RegimenValidationError.invalidSchedule
         }
     }
