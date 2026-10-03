@@ -30,27 +30,27 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		32EC6E43307003F400EF8343 /* FemmeTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FemmeTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		32EC6E52307003F600EF8343 /* FemmeTrackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FemmeTrackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		32EC6E5C307003F600EF8343 /* FemmeTrackUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FemmeTrackUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		32EC6E43307003F400EF8343 /* fembie.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = fembie.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		32EC6E52307003F600EF8343 /* fembieTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fembieTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		32EC6E5C307003F600EF8343 /* fembieUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fembieUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		32EC6EB13070213400EF8343 /* Architecture.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Architecture.md; sourceTree = "<group>"; };
 		32EC6EB43070215400EF8343 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		32EC6E45307003F400EF8343 /* FemmeTrack */ = {
+		32EC6E45307003F400EF8343 /* fembie */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = FemmeTrack;
+			path = fembie;
 			sourceTree = "<group>";
 		};
-		32EC6E55307003F600EF8343 /* FemmeTrackTests */ = {
+		32EC6E55307003F600EF8343 /* fembieTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = FemmeTrackTests;
+			path = fembieTests;
 			sourceTree = "<group>";
 		};
-		32EC6E5F307003F600EF8343 /* FemmeTrackUITests */ = {
+		32EC6E5F307003F600EF8343 /* fembieUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = FemmeTrackUITests;
+			path = fembieUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -85,9 +85,9 @@
 			isa = PBXGroup;
 			children = (
 				32EC6EB23070213400EF8343 /* Docs */,
-				32EC6E45307003F400EF8343 /* FemmeTrack */,
-				32EC6E55307003F600EF8343 /* FemmeTrackTests */,
-				32EC6E5F307003F600EF8343 /* FemmeTrackUITests */,
+				32EC6E45307003F400EF8343 /* fembie */,
+				32EC6E55307003F600EF8343 /* fembieTests */,
+				32EC6E5F307003F600EF8343 /* fembieUITests */,
 				32EC6E44307003F400EF8343 /* Products */,
 				32EC6EB43070215400EF8343 /* AGENTS.md */,
 			);
@@ -96,9 +96,9 @@
 		32EC6E44307003F400EF8343 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				32EC6E43307003F400EF8343 /* FemmeTrack.app */,
-				32EC6E52307003F600EF8343 /* FemmeTrackTests.xctest */,
-				32EC6E5C307003F600EF8343 /* FemmeTrackUITests.xctest */,
+				32EC6E43307003F400EF8343 /* fembie.app */,
+				32EC6E52307003F600EF8343 /* fembieTests.xctest */,
+				32EC6E5C307003F600EF8343 /* fembieUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -114,9 +114,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		32EC6E42307003F400EF8343 /* FemmeTrack */ = {
+		32EC6E42307003F400EF8343 /* fembie */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 32EC6E66307003F600EF8343 /* Build configuration list for PBXNativeTarget "FemmeTrack" */;
+			buildConfigurationList = 32EC6E66307003F600EF8343 /* Build configuration list for PBXNativeTarget "fembie" */;
 			buildPhases = (
 				32EC6E3F307003F400EF8343 /* Sources */,
 				32EC6E40307003F400EF8343 /* Frameworks */,
@@ -127,19 +127,19 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				32EC6E45307003F400EF8343 /* FemmeTrack */,
+				32EC6E45307003F400EF8343 /* fembie */,
 			);
-			name = FemmeTrack;
+			name = fembie;
 			packageProductDependencies = (
 				F10000000000000000000002 /* EstradiolPK */,
 			);
 			productName = FemmeTrack;
-			productReference = 32EC6E43307003F400EF8343 /* FemmeTrack.app */;
+			productReference = 32EC6E43307003F400EF8343 /* fembie.app */;
 			productType = "com.apple.product-type.application";
 		};
-		32EC6E51307003F600EF8343 /* FemmeTrackTests */ = {
+		32EC6E51307003F600EF8343 /* fembieTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 32EC6E69307003F600EF8343 /* Build configuration list for PBXNativeTarget "FemmeTrackTests" */;
+			buildConfigurationList = 32EC6E69307003F600EF8343 /* Build configuration list for PBXNativeTarget "fembieTests" */;
 			buildPhases = (
 				32EC6E4E307003F600EF8343 /* Sources */,
 				32EC6E4F307003F600EF8343 /* Frameworks */,
@@ -151,18 +151,18 @@
 				32EC6E54307003F600EF8343 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				32EC6E55307003F600EF8343 /* FemmeTrackTests */,
+				32EC6E55307003F600EF8343 /* fembieTests */,
 			);
-			name = FemmeTrackTests;
+			name = fembieTests;
 			packageProductDependencies = (
 			);
 			productName = FemmeTrackTests;
-			productReference = 32EC6E52307003F600EF8343 /* FemmeTrackTests.xctest */;
+			productReference = 32EC6E52307003F600EF8343 /* fembieTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		32EC6E5B307003F600EF8343 /* FemmeTrackUITests */ = {
+		32EC6E5B307003F600EF8343 /* fembieUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 32EC6E6C307003F600EF8343 /* Build configuration list for PBXNativeTarget "FemmeTrackUITests" */;
+			buildConfigurationList = 32EC6E6C307003F600EF8343 /* Build configuration list for PBXNativeTarget "fembieUITests" */;
 			buildPhases = (
 				32EC6E58307003F600EF8343 /* Sources */,
 				32EC6E59307003F600EF8343 /* Frameworks */,
@@ -174,13 +174,13 @@
 				32EC6E5E307003F600EF8343 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				32EC6E5F307003F600EF8343 /* FemmeTrackUITests */,
+				32EC6E5F307003F600EF8343 /* fembieUITests */,
 			);
-			name = FemmeTrackUITests;
+			name = fembieUITests;
 			packageProductDependencies = (
 			);
 			productName = FemmeTrackUITests;
-			productReference = 32EC6E5C307003F600EF8343 /* FemmeTrackUITests.xctest */;
+			productReference = 32EC6E5C307003F600EF8343 /* fembieUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -206,7 +206,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 32EC6E3E307003F400EF8343 /* Build configuration list for PBXProject "FemmeTrack" */;
+			buildConfigurationList = 32EC6E3E307003F400EF8343 /* Build configuration list for PBXProject "fembie" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -223,9 +223,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				32EC6E42307003F400EF8343 /* FemmeTrack */,
-				32EC6E51307003F600EF8343 /* FemmeTrackTests */,
-				32EC6E5B307003F600EF8343 /* FemmeTrackUITests */,
+				32EC6E42307003F400EF8343 /* fembie */,
+				32EC6E51307003F600EF8343 /* fembieTests */,
+				32EC6E5B307003F600EF8343 /* fembieUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -283,12 +283,12 @@
 /* Begin PBXTargetDependency section */
 		32EC6E54307003F600EF8343 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 32EC6E42307003F400EF8343 /* FemmeTrack */;
+			target = 32EC6E42307003F400EF8343 /* fembie */;
 			targetProxy = 32EC6E53307003F600EF8343 /* PBXContainerItemProxy */;
 		};
 		32EC6E5E307003F600EF8343 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 32EC6E42307003F400EF8343 /* FemmeTrack */;
+			target = 32EC6E42307003F400EF8343 /* fembie */;
 			targetProxy = 32EC6E5D307003F600EF8343 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -433,7 +433,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.FemmeTrack;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.fembie;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -465,7 +465,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.FemmeTrack;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.fembie;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -486,7 +486,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.FemmeTrackTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.fembieTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -507,7 +507,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.FemmeTrackTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.fembieTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -526,7 +526,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.FemmeTrackUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.fembieUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -545,7 +545,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.FemmeTrackUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hyperviolet.fembieUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -560,7 +560,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		32EC6E3E307003F400EF8343 /* Build configuration list for PBXProject "FemmeTrack" */ = {
+		32EC6E3E307003F400EF8343 /* Build configuration list for PBXProject "fembie" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				32EC6E64307003F600EF8343 /* Debug */,
@@ -569,7 +569,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		32EC6E66307003F600EF8343 /* Build configuration list for PBXNativeTarget "FemmeTrack" */ = {
+		32EC6E66307003F600EF8343 /* Build configuration list for PBXNativeTarget "fembie" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				32EC6E67307003F600EF8343 /* Debug */,
@@ -578,7 +578,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		32EC6E69307003F600EF8343 /* Build configuration list for PBXNativeTarget "FemmeTrackTests" */ = {
+		32EC6E69307003F600EF8343 /* Build configuration list for PBXNativeTarget "fembieTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				32EC6E6A307003F600EF8343 /* Debug */,
@@ -587,7 +587,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		32EC6E6C307003F600EF8343 /* Build configuration list for PBXNativeTarget "FemmeTrackUITests" */ = {
+		32EC6E6C307003F600EF8343 /* Build configuration list for PBXNativeTarget "fembieUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				32EC6E6D307003F600EF8343 /* Debug */,
