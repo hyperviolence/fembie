@@ -11,6 +11,8 @@ struct RegimenView: View {
     @State private var currentRegimen: Regimen?
     @State private var pastInjectionsToShow = 2
     @State private var futureInjectionsToShow = 1
+    @State private var takenEventIDs: Set<UUID> = []
+    @State private var forgottenEventIDs: Set<UUID> = []
     
     private let enabledEstradiolTypes: Set<EstradiolType> = [EstradiolType.estradiolEnanthate]
     private let enabledAdministrationRoutes: Set<EstradiolRoute> = [EstradiolRoute.subcutaneous]
@@ -88,38 +90,56 @@ struct RegimenView: View {
                 }
                 Section("Injection events") {
                     if let regimen = currentRegimen {
-                        let dates = injectionDatesAroundNow(for: regimen, pastCount: pastInjectionsToShow, futureCount: futureInjectionsToShow)
-                        if dates.isEmpty {
+                        let events = injectionEventsAroundNow(for: regimen, pastCount: pastInjectionsToShow, futureCount: futureInjectionsToShow)
+                        if events.isEmpty {
                             ContentUnavailableView("No scheduled injections", systemImage: "calendar",
                                 description: Text("Your schedule will generate the event list here."))
                         } else {
                             Button("Show more past injections...") {
                                 pastInjectionsToShow += 3
-                            }.disabled(true)
-                            ForEach(dates, id: \.self) { date in
+                            }
+                            ForEach(events, id: \.id) { event in
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text(date.formatted(date: .abbreviated, time: .shortened))
+                                    Text(event.scheduledAt.formatted(date: .abbreviated, time: .shortened))
                                         .font(.headline)
                                     HStack(spacing: 8) {
                                         Button("Taken") {
-                                            // TODO: Implement action
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                if !takenEventIDs.contains(event.id) {
+                                                    if let idx = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == event.id }) {
+                                                        currentRegimen!.injectionEvents[idx].adjustment = .none
+                                                    }
+                                                    forgottenEventIDs.remove(event.id)
+                                                    takenEventIDs.insert(event.id)
+                                                
+                                                }
+                                            }
                                         }
                                         .buttonStyle(.borderedProminent)
+                                        .tint(takenEventIDs.contains(event.id) ? .green : .accentColor)
 
                                         Button("Forgotten") {
-                                            // TODO: Implement action
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                if !forgottenEventIDs.contains(event.id) {
+                                                    if let idx = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == event.id }) {
+                                                        currentRegimen!.injectionEvents[idx].adjustment = .skipped
+                                                    }
+                                                    takenEventIDs.remove(event.id)
+                                                    forgottenEventIDs.insert(event.id)
+                                                }
+                                            }
                                         }
-                                        .buttonStyle(.bordered)
+                                        .buttonStyle(.borderedProminent)
+                                        .tint(forgottenEventIDs.contains(event.id) ? .red)
 
                                         Button("Delayed") {
-                                            // TODO: Implement action
+                                            //TODO: implement delay
                                         }
                                         .buttonStyle(.bordered)
                                     }
                                 }
                                 .padding(.vertical, 4)
                             }
-                        
                             Button("Show more future injections...") {
                                 futureInjectionsToShow += 3
                             }
@@ -161,51 +181,31 @@ struct RegimenView: View {
         }
     }
     
-    private func injectionDatesAroundNow(for regimen: Regimen, pastCount: Int, futureCount: Int) -> [Date] {
-        guard regimen.intervalHours > 0 else { return [] }
-        let interval = regimen.intervalHours * 3600
+    private func injectionEventsAroundNow(for regimen: Regimen, pastCount: Int, futureCount: Int) -> [InjectionEvent] {
+        let events = regimen.injectionEvents.sorted { $0.scheduledAt < $1.scheduledAt }
+        guard !events.isEmpty else { return [] }
         let now = Date()
-        let start = regimen.effectiveFrom
-        let end = regimen.effectiveUntil
 
-        // If regimen starts in the future, show only future occurrences from start
-        if start > now {
-            var result: [Date] = []
-            var current = start
-            for _ in 0..<futureCount {
-                if let end = end, current > end { break }
-                result.append(current)
-                current = current.addingTimeInterval(interval)
-            }
-            return result
+        // If all events are in the future, return the next 'futureCount' events
+        if let first = events.first, first.scheduledAt > now {
+            return Array(events.prefix(futureCount))
         }
 
-        // Compute the most recent occurrence at or before now
-        let secondsSinceStart = now.timeIntervalSince(start)
-        let n = floor(secondsSinceStart / interval)
-        let lastPast = start.addingTimeInterval(n * interval)
-
-        var dates: [Date] = []
-
-        // Past occurrences (including lastPast), limited by start date
-        var pastDates: [Date] = []
-        var past = lastPast
-        for _ in 0..<pastCount {
-            if past < start { break }
-            pastDates.append(past)
-            past = past.addingTimeInterval(-interval)
-        }
-        pastDates.sort() // ascending
-        dates.append(contentsOf: pastDates)
-
-        // Future occurrences after lastPast, limited by effectiveUntil
-        var next = lastPast.addingTimeInterval(interval)
-        for _ in 0..<futureCount {
-            if let end = end, next > end { break }
-            dates.append(next)
-            next = next.addingTimeInterval(interval)
+        // Find the last event that is at or before now
+        guard let lastPastIndex = events.lastIndex(where: { $0.scheduledAt <= now }) else {
+            return Array(events.prefix(futureCount))
         }
 
-        return dates
+        // Past slice including the most recent past event
+        let pastStart = max(0, lastPastIndex - (pastCount - 1))
+        let pastSlice = events[pastStart...lastPastIndex]
+
+        // Future slice right after the last past event
+        let futureStart = min(events.count, lastPastIndex + 1)
+        let futureEnd = min(events.count, futureStart + futureCount)
+        let futureSlice = events[futureStart..<futureEnd]
+
+        return Array(pastSlice) + Array(futureSlice)
     }
 }
+
