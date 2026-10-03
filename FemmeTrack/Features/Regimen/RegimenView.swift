@@ -14,9 +14,7 @@ struct RegimenView: View {
     @State private var takenEventIDs: Set<UUID> = []
     @State private var forgottenEventIDs: Set<UUID> = []
     
-    @State private var takenDefaultState: Bool = true
-    
-    private let takenDefaultColor: Color = Color.primary
+    private let takenDefaultColor: Color = Color.teal
     private let takenManuallyPushedColor: Color = Color.green
     private let injectionStatusUnpushedColor: Color = Color.blue
     private let forgottenPushedColor: Color = Color.red
@@ -98,49 +96,53 @@ struct RegimenView: View {
                 }
                 Section("Injection events") {
                     if let regimen = currentRegimen {
-                        let events = injectionEventsAroundNow(for: regimen, pastCount: pastInjectionsToShow, futureCount: futureInjectionsToShow)
-                        if events.isEmpty {
-                            ContentUnavailableView("No scheduled injections", systemImage: "calendar",
-                                description: Text("Your schedule will generate the event list here."))
-                        } else {
-                            Button("Show more past injections...") {
-                                pastInjectionsToShow += 3
-                            }
-                            ForEach(events, id: \.id) { event in
-                                let eventID = event.id
-                                let dateString = event.scheduledAt.formatted(date: .abbreviated, time: .shortened)
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(dateString)
-                                        .font(.headline)
-                                    HStack(spacing: 8) {
-                                        Button("Taken") {
-                                            withAnimation(.easeInOut(duration: 0.2)) {
-                                                handleTakenTap(for: eventID)
-                                            }
-                                        }
-                                        .buttonStyle(.bordered)
-                                        .tint(computeTakenColor(id: eventID))
-                                        
-                                    
-
-                                        Button("Forgotten") {
-                                            withAnimation(.easeInOut(duration: 0.2)) {
-                                                handleForgottenTap(for: eventID)
-                                            }
-                                        }
-                                        .buttonStyle(.bordered)
-                                        .tint(computeForgottenColor(id: eventID))
-
-                                        Button("Delayed") {
-                                            //TODO: implement delay
-                                        }
-                                        .buttonStyle(.bordered)
-                                    }
+                        Group {
+                            let events = injectionEventsAroundNow(for: regimen, pastCount: pastInjectionsToShow, futureCount: futureInjectionsToShow)
+                            if events.isEmpty {
+                                ContentUnavailableView("No scheduled injections", systemImage: "calendar",
+                                    description: Text("Your schedule will generate the event list here."))
+                            } else {
+                                Button("Show more past injections...") {
+                                    pastInjectionsToShow += 3
                                 }
-                                .padding(.vertical, 4)
-                            }
-                            Button("Show more future injections...") {
-                                futureInjectionsToShow += 3
+                                ForEach(events, id: \.id) { event in
+                                    let eventID = event.id
+                                    let dateString = event.scheduledAt.formatted(date: .abbreviated, time: .shortened)
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(dateString)
+                                            .font(.headline)
+                                        HStack(spacing: 8) {
+                                            Button("Taken") {
+                                                withAnimation(.easeInOut(duration: 0.2)) {
+                                                    if let sourceIndex = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == eventID }) {
+                                                        handleTakenTap(atIndex: sourceIndex)
+                                                    }
+                                                }
+                                            }
+                                            .buttonStyle(.bordered)
+                                            .tint(computeTakenColor(event))
+                                            
+                                            Button("Forgotten") {
+                                                withAnimation(.easeInOut(duration: 0.2)) {
+                                                    if let sourceIndex = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == eventID }) {
+                                                        handleForgottenTap(atIndex: sourceIndex)
+                                                    }
+                                                }
+                                            }
+                                            .buttonStyle(.bordered)
+                                            .tint(computeForgottenColor(event))
+
+                                            Button("Delayed") {
+                                                //TODO: implement delay
+                                            }
+                                            .buttonStyle(.bordered)
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                                Button("Show more future injections...") {
+                                    futureInjectionsToShow += 3
+                                }
                             }
                         }
                     } else {
@@ -156,7 +158,12 @@ struct RegimenView: View {
                     selectedRoute = first
                 }
             }
-            .task { await loadCurrentRegimen() }
+            .task {
+                await loadCurrentRegimen()
+                if let regimen = currentRegimen {
+                    syncStatesWithPersistence(for: regimen)
+                }
+            }
             .alert("Save Regimen", isPresented: $showSaveAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -165,40 +172,58 @@ struct RegimenView: View {
         }
     }
     
-    private func handleTakenTap(for eventID: UUID) {
+    private func handleTakenTap(atIndex idx: Int) {
+        guard let regimen = currentRegimen else { return }
+        let eventID = regimen.injectionEvents[idx].id
         if !takenEventIDs.contains(eventID) {
-            if let idx = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == eventID }) {
-                currentRegimen!.injectionEvents[idx].adjustment = .none
-            }
+            currentRegimen!.injectionEvents[idx].adjustment = .none
+            currentRegimen!.injectionEvents[idx].statusChangedManually = true
             forgottenEventIDs.remove(eventID)
             takenEventIDs.insert(eventID)
-            takenDefaultState = false
+
+            Task {
+                do {
+                    let repo = try FileTrackingRepository()
+                    try await repo.save(currentRegimen!)
+                } catch {
+                    print("Failed to persist regimen: \(error)")
+                }
+            }
         }
     }
 
-    private func handleForgottenTap(for eventID: UUID) {
+    private func handleForgottenTap(atIndex idx: Int) {
+        guard let regimen = currentRegimen else { return }
+        let eventID = regimen.injectionEvents[idx].id
         if !forgottenEventIDs.contains(eventID) {
-            if let idx = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == eventID }) {
-                currentRegimen!.injectionEvents[idx].adjustment = .skipped
-            }
+            currentRegimen!.injectionEvents[idx].adjustment = .skipped
+            currentRegimen!.injectionEvents[idx].statusChangedManually = true
             takenEventIDs.remove(eventID)
             forgottenEventIDs.insert(eventID)
-            takenDefaultState = false
+
+            Task {
+                do {
+                    let repo = try FileTrackingRepository()
+                    try await repo.save(currentRegimen!)
+                } catch {
+                    print("Failed to persist regimen: \(error)")
+                }
+            }
         }
     }
     
-    private func computeTakenColor(id: UUID) -> Color {
-        if takenDefaultState {
+    private func computeTakenColor(_ event: InjectionEvent) -> Color {
+        if !event.statusChangedManually {
             return takenDefaultColor
-        } else if takenEventIDs.contains(id) {
+        } else if takenEventIDs.contains(event.id) {
             return takenManuallyPushedColor
         } else {
             return injectionStatusUnpushedColor
         }
     }
     
-    private func computeForgottenColor(id: UUID) -> Color {
-        if forgottenEventIDs.contains(id) {
+    private func computeForgottenColor(_ event: InjectionEvent) -> Color {
+        if forgottenEventIDs.contains(event.id) {
             return forgottenPushedColor
         } else {
             return injectionStatusUnpushedColor
@@ -217,6 +242,21 @@ struct RegimenView: View {
         } catch {
             // Non-fatal: leave currentRegimen as nil
             print("Failed to load current regimen: \(error)")
+        }
+    }
+    
+    private func syncStatesWithPersistence(for regimen: Regimen) {
+        for event in regimen.injectionEvents {
+            if event.statusChangedManually {
+                switch event.adjustment {
+                case .none:
+                    takenEventIDs.insert(event.id)
+                case .skipped:
+                    forgottenEventIDs.insert(event.id)
+                default:
+                    break
+                }
+            }
         }
     }
     

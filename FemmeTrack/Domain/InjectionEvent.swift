@@ -7,6 +7,7 @@ struct InjectionEvent: Identifiable, Codable {
     let scheduledAt: Date
     let doseMilligramsOfEster: Double
     var adjustment: Adjustment = .none
+    var statusChangedManually: Bool = false
 
     enum Adjustment: Codable {
         case none // Upcoming or assumed taken, depending on the current time.
