@@ -1,6 +1,6 @@
 import Foundation
 
-enum EstradiolType: String, Identifiable, CaseIterable {
+nonisolated enum EstradiolType: String, Identifiable, CaseIterable {
     case estradiolEnanthate = "een"
     case estradiolValerate = "ev"
     case estradiolUndecyclate = "eun"
@@ -23,7 +23,7 @@ enum EstradiolType: String, Identifiable, CaseIterable {
     
 }
 
-enum EstradiolRoute: String, Identifiable, CaseIterable {
+nonisolated enum EstradiolRoute: String, Identifiable, CaseIterable {
     case subcutaneous = "subq"
     case intramuscular = "im"
     case transdermal = "tdermal"

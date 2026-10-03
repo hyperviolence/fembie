@@ -1,106 +1,101 @@
 import Foundation
 
-/// A simple JSON file–backed implementation of `TrackingRepository`.
-/// Stores each entity type as a separate JSON file under Application Support.
-/// Thread-safe via actor isolation. Writes occur immediately on each save.
+/// One app-owned actor serializes reads and atomic writes to local JSON stores.
 actor FileTrackingRepository: TrackingRepository {
-    // MARK: - In-memory caches
-    private var regimensCache: [Regimen] = []
-    private var injectionEventsCache: [InjectionEvent] = []
-    private var checkInsCache: [CheckIn] = []
-
-    // MARK: - File locations and codecs
+    private var regimensCache: [Regimen]?
+    private var injectionEventsCache: [InjectionEvent]?
+    private var checkInsCache: [CheckIn]?
     private let baseURL: URL
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
-    // Filenames
     private enum Store: String {
         case regimens = "regimens.json"
         case injectionEvents = "injectionEvents.json"
         case checkIns = "checkIns.json"
     }
 
-    // MARK: - Initialization
-    init() throws {
-        // Resolve Application Support/Tracking directory
-        let fm = FileManager.default
-        let appSupport = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        let dir = appSupport.appendingPathComponent("Tracking", isDirectory: true)
-        if !fm.fileExists(atPath: dir.path) {
-            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        }
-        self.baseURL = dir
-
-        // Configure encoders/decoders
-        let enc = JSONEncoder()
-        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-        enc.dateEncodingStrategy = .iso8601
-        self.encoder = enc
-
-        let dec = JSONDecoder()
-        dec.dateDecodingStrategy = .iso8601
-        self.decoder = dec
-
-        // Initial load (non-throwing defaults to empty if files missing)
-        self.regimensCache = (try? load([Regimen].self, from: .regimens)) ?? []
-        self.injectionEventsCache = (try? load([InjectionEvent].self, from: .injectionEvents)) ?? []
-        self.checkInsCache = (try? load([CheckIn].self, from: .checkIns)) ?? []
+    // Loading happens on the actor, rather than escaping self during initialization.
+    init(baseURL: URL = URL.applicationSupportDirectory.appending(path: "Tracking", directoryHint: .isDirectory)) {
+        self.baseURL = baseURL
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        self.encoder = encoder
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        self.decoder = decoder
     }
 
-    // MARK: - TrackingRepository
-    func regimens() throws -> [Regimen] { regimensCache }
-    func injectionEvents() throws -> [InjectionEvent] { injectionEventsCache }
-    func checkIns() throws -> [CheckIn] { checkInsCache }
+    func regimens() throws -> [Regimen] {
+        if let regimensCache { return regimensCache }
+        let values: [Regimen] = try load(from: .regimens)
+        for value in values { try value.validate() }
+        regimensCache = values
+        return values
+    }
+
+    func injectionEvents() throws -> [InjectionEvent] {
+        if let injectionEventsCache { return injectionEventsCache }
+        let values: [InjectionEvent] = try load(from: .injectionEvents)
+        injectionEventsCache = values
+        return values
+    }
+
+    func checkIns() throws -> [CheckIn] {
+        if let checkInsCache { return checkInsCache }
+        let values: [CheckIn] = try load(from: .checkIns)
+        checkInsCache = values
+        return values
+    }
 
     func save(_ regimen: Regimen) throws {
-        upsert(&regimensCache, item: regimen) { $0.id == $1.id }
-        try persist(regimensCache, to: .regimens)
+        try regimen.validate()
+        // Refuse to overwrite unreadable data, even if the caller never loaded it.
+        _ = try regimens()
+        let values = [regimen]
+        try persist(values, to: .regimens)
+        regimensCache = values
     }
 
     func save(_ event: InjectionEvent) throws {
-        upsert(&injectionEventsCache, item: event) { $0.id == $1.id }
-        try persist(injectionEventsCache, to: .injectionEvents)
+        var values = try injectionEvents()
+        upsert(&values, item: event)
+        try persist(values, to: .injectionEvents)
+        injectionEventsCache = values
     }
 
     func save(_ checkIn: CheckIn) throws {
-        // Validate ranges 0...10 before persisting
-        guard (0...10).contains(checkIn.mood),
-              (0...10).contains(checkIn.libido),
+        guard (0...10).contains(checkIn.mood), (0...10).contains(checkIn.libido),
               (0...10).contains(checkIn.energy) else {
-            throw NSError(domain: "FileTrackingRepository", code: 1001, userInfo: [NSLocalizedDescriptionKey: "CheckIn responses must be in the range 0...10."])
+            throw NSError(domain: "FileTrackingRepository", code: 1001,
+                          userInfo: [NSLocalizedDescriptionKey: "CheckIn responses must be in the range 0...10."])
         }
-        upsert(&checkInsCache, item: checkIn) { $0.id == $1.id }
-        try persist(checkInsCache, to: .checkIns)
+        var values = try checkIns()
+        upsert(&values, item: checkIn)
+        try persist(values, to: .checkIns)
+        checkInsCache = values
     }
 
-    // MARK: - Helpers
-    private func url(for store: Store) -> URL {
-        baseURL.appendingPathComponent(store.rawValue)
-    }
-
-    private func load<T: Decodable>(_ type: T.Type, from store: Store) throws -> T {
-        let url = url(for: store)
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            // For arrays, return empty if missing
-            if T.self is [Regimen].Type || T.self is [InjectionEvent].Type || T.self is [CheckIn].Type {
-                return [] as! T
-            }
-            throw NSError(domain: "FileTrackingRepository", code: 1000, userInfo: [NSLocalizedDescriptionKey: "Missing store file: \(store.rawValue)"])
+    private func load<Element: Decodable>(from store: Store) throws -> [Element] {
+        let data: Data
+        do {
+            data = try Data(contentsOf: baseURL.appending(path: store.rawValue))
+        } catch CocoaError.fileReadNoSuchFile {
+            return []
         }
-        let data = try Data(contentsOf: url)
-        return try decoder.decode(T.self, from: data)
+        return try decoder.decode([Element].self, from: data)
     }
 
     private func persist<T: Encodable>(_ value: T, to store: Store) throws {
-        let url = url(for: store)
         let data = try encoder.encode(value)
-        try data.write(to: url, options: .atomic)
+        try FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
+        try data.write(to: baseURL.appending(path: store.rawValue), options: .atomic)
     }
 
-    private func upsert<T>(_ array: inout [T], item: T, equals: (T, T) -> Bool) {
-        if let idx = array.firstIndex(where: { equals($0, item) }) {
-            array[idx] = item
+    private func upsert<T: Identifiable>(_ array: inout [T], item: T) {
+        if let index = array.firstIndex(where: { $0.id == item.id }) {
+            array[index] = item
         } else {
             array.append(item)
         }
