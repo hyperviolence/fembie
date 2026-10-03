@@ -5,6 +5,7 @@ import Foundation
 /// Copyright (c) 2025 alix; MIT license, included in LICENSE-Estrannaise.txt.
 public struct EnanthateIntramuscularModel: PredictionModel {
     public let modelIdentifier = "estrannaise/enanthate-intramuscular/v1"
+    public let modelSource = "Model source: Estrannaise by alix"
 
     public init() { }
 

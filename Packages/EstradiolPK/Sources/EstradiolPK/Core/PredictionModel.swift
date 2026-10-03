@@ -25,6 +25,7 @@ public struct PredictionPoint: Sendable {
 
 public protocol PredictionModel: Sendable {
     var modelIdentifier: String { get }
+    var modelSource: String { get }
     func predict(doses: [DoseAdministration], at timestamps: [Date]) throws -> [PredictionPoint]
 }
 

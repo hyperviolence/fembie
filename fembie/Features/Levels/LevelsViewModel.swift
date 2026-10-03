@@ -6,6 +6,7 @@ import EstradiolPK
 @Observable
 final class LevelsViewModel {
     private(set) var modelIdentifier: String?
+    private(set) var modelSource: String = "Model source loading..."
     private(set) var points: [PredictionPoint] = []
     private(set) var current: PredictionPoint?
     private(set) var message: String?
@@ -31,6 +32,7 @@ final class LevelsViewModel {
             return
         }
         modelIdentifier = predictionModel.modelIdentifier
+        modelSource = predictionModel.modelSource
         isLoading = true
         defer {
             if revision == requestRevision { isLoading = false }
@@ -45,4 +47,5 @@ final class LevelsViewModel {
             message = "Could not calculate estimated levels: \(error.localizedDescription)"
         }
     }
+    
 }

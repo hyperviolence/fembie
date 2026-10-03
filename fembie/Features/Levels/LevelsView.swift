@@ -42,7 +42,7 @@ struct LevelsView: View {
                             .font(.caption)
                     }
                     if let sourceURL = URL(string: "https://estrannai.se") {
-                        Link("Model source: Estrannaise by alix", destination: sourceURL)
+                        Link(model.modelSource, destination: sourceURL)
                     }
                     DisclosureGroup("MIT license · Copyright © 2025 alix") {
                         Text(EstrannaiseAttribution.license)

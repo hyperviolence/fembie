@@ -6,6 +6,7 @@ import Foundation
 /// Copyright (c) 2025 alix; MIT license, included in LICENSE-Estrannaise.txt.
 public struct EnanthateSubcutaneousModel: PredictionModel {
     public let modelIdentifier = "fembie/enanthate-subcutaneous/im-k1-90-percent/v1"
+    public let modelSource = "Modified Estrannaise's EEn IM model with a 10% lower depot release rate."
 
     public init() { }
 
