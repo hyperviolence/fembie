@@ -14,6 +14,14 @@ struct RegimenView: View {
     @State private var takenEventIDs: Set<UUID> = []
     @State private var forgottenEventIDs: Set<UUID> = []
     
+    @State private var takenDefaultState: Bool = true
+    
+    private let takenDefaultColor: Color = Color.primary
+    private let takenManuallyPushedColor: Color = Color.green
+    private let injectionStatusUnpushedColor: Color = Color.blue
+    private let forgottenPushedColor: Color = Color.red
+    private let delayedPushedColor: Color = Color.yellow
+    
     private let enabledEstradiolTypes: Set<EstradiolType> = [EstradiolType.estradiolEnanthate]
     private let enabledAdministrationRoutes: Set<EstradiolRoute> = [EstradiolRoute.subcutaneous]
 
@@ -99,38 +107,29 @@ struct RegimenView: View {
                                 pastInjectionsToShow += 3
                             }
                             ForEach(events, id: \.id) { event in
+                                let eventID = event.id
+                                let dateString = event.scheduledAt.formatted(date: .abbreviated, time: .shortened)
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text(event.scheduledAt.formatted(date: .abbreviated, time: .shortened))
+                                    Text(dateString)
                                         .font(.headline)
                                     HStack(spacing: 8) {
                                         Button("Taken") {
                                             withAnimation(.easeInOut(duration: 0.2)) {
-                                                if !takenEventIDs.contains(event.id) {
-                                                    if let idx = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == event.id }) {
-                                                        currentRegimen!.injectionEvents[idx].adjustment = .none
-                                                    }
-                                                    forgottenEventIDs.remove(event.id)
-                                                    takenEventIDs.insert(event.id)
-                                                
-                                                }
+                                                handleTakenTap(for: eventID)
                                             }
                                         }
-                                        .buttonStyle(.borderedProminent)
-                                        .tint(takenEventIDs.contains(event.id) ? .green : .accentColor)
+                                        .buttonStyle(.bordered)
+                                        .tint(computeTakenColor(id: eventID))
+                                        
+                                    
 
                                         Button("Forgotten") {
                                             withAnimation(.easeInOut(duration: 0.2)) {
-                                                if !forgottenEventIDs.contains(event.id) {
-                                                    if let idx = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == event.id }) {
-                                                        currentRegimen!.injectionEvents[idx].adjustment = .skipped
-                                                    }
-                                                    takenEventIDs.remove(event.id)
-                                                    forgottenEventIDs.insert(event.id)
-                                                }
+                                                handleForgottenTap(for: eventID)
                                             }
                                         }
-                                        .buttonStyle(.borderedProminent)
-                                        .tint(forgottenEventIDs.contains(event.id) ? .red)
+                                        .buttonStyle(.bordered)
+                                        .tint(computeForgottenColor(id: eventID))
 
                                         Button("Delayed") {
                                             //TODO: implement delay
@@ -163,6 +162,46 @@ struct RegimenView: View {
             } message: {
                 Text(saveAlertMessage)
             }
+        }
+    }
+    
+    private func handleTakenTap(for eventID: UUID) {
+        if !takenEventIDs.contains(eventID) {
+            if let idx = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == eventID }) {
+                currentRegimen!.injectionEvents[idx].adjustment = .none
+            }
+            forgottenEventIDs.remove(eventID)
+            takenEventIDs.insert(eventID)
+            takenDefaultState = false
+        }
+    }
+
+    private func handleForgottenTap(for eventID: UUID) {
+        if !forgottenEventIDs.contains(eventID) {
+            if let idx = currentRegimen?.injectionEvents.firstIndex(where: { $0.id == eventID }) {
+                currentRegimen!.injectionEvents[idx].adjustment = .skipped
+            }
+            takenEventIDs.remove(eventID)
+            forgottenEventIDs.insert(eventID)
+            takenDefaultState = false
+        }
+    }
+    
+    private func computeTakenColor(id: UUID) -> Color {
+        if takenDefaultState {
+            return takenDefaultColor
+        } else if takenEventIDs.contains(id) {
+            return takenManuallyPushedColor
+        } else {
+            return injectionStatusUnpushedColor
+        }
+    }
+    
+    private func computeForgottenColor(id: UUID) -> Color {
+        if forgottenEventIDs.contains(id) {
+            return forgottenPushedColor
+        } else {
+            return injectionStatusUnpushedColor
         }
     }
     
