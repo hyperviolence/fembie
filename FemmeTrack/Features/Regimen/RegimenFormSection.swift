@@ -28,7 +28,7 @@ struct RegimenFormSection: View {
             if let message = model.validationMessage { Text(message) }
             else { Text("Saving replaces your previous regimen and its injection history.") }
         }
-        .disabled(model.isBusy || !model.hasLoaded)
+        .disabled(model.isBusy)
         .onChange(of: model.selectedEster) {
             if let route = EsterRoutes.getRoutes(ester: model.selectedEster).first(where: { enabledRoutes.contains($0) }) {
                 model.selectedRoute = route

@@ -20,10 +20,8 @@ actor FileTrackingRepository: TrackingRepository {
         self.baseURL = baseURL
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
         self.encoder = encoder
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
         self.decoder = decoder
     }
 
@@ -51,8 +49,6 @@ actor FileTrackingRepository: TrackingRepository {
 
     func save(_ regimen: Regimen) throws {
         try regimen.validate()
-        // Refuse to overwrite unreadable data, even if the caller never loaded it.
-        _ = try regimens()
         let values = [regimen]
         try persist(values, to: .regimens)
         regimensCache = values

@@ -23,13 +23,18 @@ struct RegimenViewModelTests {
         await model.saveRegimen()
         #expect(model.savedRegimen?.doseMilligramsOfEster == 2.5)
         #expect(model.savedRegimen?.intervalHours == 84)
+        let savedID = model.savedRegimen?.id
         for invalid in ["", "0", "-1", "nan", "inf", "2,5junk", "1,2,3", "1.000"] {
             model.dose = invalid
-            #expect(!model.canSave)
+            #expect(model.validationMessage != nil)
+            await model.saveRegimen()
+            #expect(model.savedRegimen?.id == savedID)
         }
         model.dose = "2"
         model.intervalDays = "0,000001"
-        #expect(!model.canSave)
+        #expect(model.validationMessage != nil)
+        await model.saveRegimen()
+        #expect(model.savedRegimen?.id == savedID)
     }
 
     @Test func futureRegimenRemainsVisibleAfterReloadAndOverwrite() async throws {
@@ -111,18 +116,33 @@ struct RegimenViewModelTests {
         #expect(try await repository.regimens().first?.injectionEvents.count == model.savedRegimen?.injectionEvents.count)
     }
 
-    @Test func failedLoadBlocksWritesUntilRetry() async {
+    @Test func failedLoadAllowsSavingReplacement() async {
         let repository = TestTrackingRepository()
         let model = model(repository: repository)
         await repository.configure(failReads: true)
         await model.load()
         #expect(model.loadError != nil)
-        #expect(!model.canSave)
+        #expect(!model.hasLoaded)
+        #expect(model.canSave)
         await model.saveRegimen()
-        #expect(await repository.writes == 0)
-        await repository.configure()
-        await model.load()
+        #expect(await repository.writes == 1)
         #expect(model.loadError == nil)
+        #expect(model.hasLoaded)
+        #expect(model.savedRegimen != nil)
+        #expect(model.canSave)
+    }
+
+    @Test func failedReplacementAfterLoadErrorKeepsError() async {
+        let repository = TestTrackingRepository()
+        let model = model(repository: repository)
+        await repository.configure(failReads: true, failWrites: true)
+        await model.load()
+        let loadError = model.loadError
+        await model.saveRegimen()
+        #expect(model.loadError == loadError)
+        #expect(!model.hasLoaded)
+        #expect(model.savedRegimen == nil)
+        #expect(model.showAlert)
         #expect(model.canSave)
     }
 

@@ -26,7 +26,25 @@ struct FileTrackingRepositoryTests {
         #expect(loaded.first?.id == replacement.id)
     }
 
-    @Test func corruptStoreIsPreservedOnReadAndWrite() async throws {
+    @Test func fractionalDatesAndCorrectionsSurviveSaveReloadAndExtension() async throws {
+        let url = directory()
+        defer { try? FileManager.default.removeItem(at: url) }
+        var value = try regimen(dose: 2)
+        value.effectiveFrom = value.effectiveFrom.addingTimeInterval(0.123456)
+        value.intervalHours = 25.123456
+        let schedule = InjectionSchedule()
+        value = try schedule.extending(value, through: value.effectiveFrom.addingTimeInterval(3 * 86400))
+        value.injectionEvents[1].adjustment = .skipped
+        try await FileTrackingRepository(baseURL: url).save(value)
+        let reloaded = try #require(try await FileTrackingRepository(baseURL: url).regimens().first)
+        #expect(reloaded.effectiveFrom == value.effectiveFrom)
+        #expect(reloaded.injectionEvents.map(\.scheduledAt) == value.injectionEvents.map(\.scheduledAt))
+        let extended = try schedule.extending(reloaded, through: reloaded.effectiveFrom.addingTimeInterval(5 * 86400))
+        #expect(extended.injectionEvents[1].id == value.injectionEvents[1].id)
+        #expect(extended.injectionEvents[1].adjustment == .skipped)
+    }
+
+    @Test func corruptStoreCanBeOverwrittenWithNewRegimen() async throws {
         let url = directory()
         defer { try? FileManager.default.removeItem(at: url) }
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
@@ -35,8 +53,12 @@ struct FileTrackingRepositoryTests {
         try corrupt.write(to: file)
         let repository = FileTrackingRepository(baseURL: url)
         await #expect(throws: (any Error).self) { try await repository.regimens() }
-        await #expect(throws: (any Error).self) { try await repository.save(regimen(dose: 2)) }
         #expect(try Data(contentsOf: file) == corrupt)
+        let replacement = try regimen(dose: 2)
+        try await repository.save(replacement)
+        let loaded = try await FileTrackingRepository(baseURL: url).regimens()
+        #expect(loaded.count == 1)
+        #expect(loaded.first?.id == replacement.id)
     }
 
     @Test func failedWriteDoesNotCommitCache() async throws {

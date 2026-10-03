@@ -1,7 +1,18 @@
 import Foundation
+import SwiftUI
 
 nonisolated enum InjectionStatus {
     case upcoming, assumedTaken, confirmed, skipped, moved
+    
+    var color: Color {
+        switch self {
+        case .upcoming: .orange
+        case .assumedTaken: .primary
+        case .confirmed: .green
+        case .skipped: .red
+        case .moved: .orange
+        }
+    }
 
     init(event: InjectionEvent, now: Date) {
         switch event.adjustment {

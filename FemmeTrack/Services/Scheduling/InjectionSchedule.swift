@@ -49,9 +49,7 @@ nonisolated struct InjectionSchedule: Sendable {
             }
             let index = Int(position.rounded())
             let expected = regimen.effectiveFrom.addingTimeInterval(Double(index) * seconds)
-            // Legacy ISO-8601 files discarded fractions of a second. Match a
-            // saved event to its recurrence index instead of recreating its ID.
-            guard abs(expected.timeIntervalSince(event.scheduledAt)) < 1,
+            guard expected == event.scheduledAt,
                   existing[index] == nil else {
                 throw RegimenValidationError.invalidSchedule
             }

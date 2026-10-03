@@ -10,7 +10,7 @@ struct InjectionEventRow: View {
             Text(event.scheduledAt, format: .dateTime.day().month().year().hour().minute())
                 .font(.headline)
             Label(status.title, systemImage: status.systemImage)
-                .foregroundStyle(.secondary)
+                .foregroundColor(status.color)
             if case .moved(let actualAt) = event.adjustment {
                 LabeledContent("Moved to", value: actualAt.formatted(date: .abbreviated, time: .shortened))
             }

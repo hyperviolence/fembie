@@ -55,35 +55,18 @@ struct FemmeTrackTests {
         #expect(try InjectionSchedule().extending(regimen(), through: futureEnd).injectionEvents.isEmpty)
     }
 
-    @Test func legacyConfirmationsDecodeAndRoundTrip() throws {
-        let id = UUID()
-        let regimenID = UUID()
-        let data = Data("""
-        {"id":"\(id)","regimenID":"\(regimenID)","scheduledAt":"2023-11-14T22:13:20Z",
-        "doseMilligramsOfEster":2,"adjustment":{"none":{}},"statusChangedManually":true}
-        """.utf8)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let event = try decoder.decode(InjectionEvent.self, from: data)
-        #expect(event.id == id)
-        #expect(event.adjustment == .confirmed)
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        let roundTrip = try decoder.decode(InjectionEvent.self, from: encoder.encode(event))
-        #expect(roundTrip.adjustment == .confirmed)
-    }
-
-    @Test func legacySubsecondSchedulesRetainCorrections() throws {
-        var saved = try InjectionSchedule().extending(regimen(hours: 25.123456), through: start.addingTimeInterval(3 * 86400))
-        saved.injectionEvents[1].adjustment = .skipped
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let reloaded = try decoder.decode(Regimen.self, from: encoder.encode(saved))
-        let extended = try InjectionSchedule().extending(reloaded, through: start.addingTimeInterval(5 * 86400))
-        #expect(extended.injectionEvents[1].id == saved.injectionEvents[1].id)
-        #expect(extended.injectionEvents[1].adjustment == .skipped)
+    @Test func injectionAdjustmentsRoundTrip() throws {
+        let date = start.addingTimeInterval(0.123456)
+        let adjustments: [InjectionAdjustment] = [.none, .confirmed, .skipped, .moved(actualAt: date)]
+        for adjustment in adjustments {
+            let event = InjectionEvent(id: UUID(), regimenID: UUID(), scheduledAt: date,
+                                       doseMilligramsOfEster: 2, adjustment: adjustment)
+            let data = try JSONEncoder().encode(event)
+            let decoded = try JSONDecoder().decode(InjectionEvent.self, from: data)
+            #expect(decoded.id == event.id)
+            #expect(decoded.scheduledAt == date)
+            #expect(decoded.adjustment == adjustment)
+        }
     }
 
     @Test func fractionalScheduleIncludesExactHorizonAndRespectsLimit() throws {

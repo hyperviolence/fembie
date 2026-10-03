@@ -45,7 +45,7 @@ final class RegimenViewModel {
         } catch { return error.localizedDescription }
     }
 
-    var canSave: Bool { hasLoaded && !isBusy && validationMessage == nil }
+    var canSave: Bool { !isBusy }
     var visibleEvents: [InjectionEvent] {
         guard let savedRegimen else { return [] }
         let past = savedRegimen.injectionEvents.filter { $0.scheduledAt <= now }
@@ -83,9 +83,7 @@ final class RegimenViewModel {
         defer { isBusy = false }
         refreshTime()
         do {
-            // Legacy stores can contain several versions. Display the latest one,
-            // including a future version; the next save replaces the entire array.
-            if let saved = try await repository.regimens().max(by: { $0.effectiveFrom < $1.effectiveFrom }) {
+            if let saved = try await repository.regimens().first {
                 let extended = try schedule.extending(saved, through: schedule.horizon(for: saved, now: now))
                 if extended.injectionEvents.count != saved.injectionEvents.count {
                     try await repository.save(extended)
@@ -98,13 +96,13 @@ final class RegimenViewModel {
             hasLoaded = true
         } catch {
             loadError = "Could not load your regimen: \(error.localizedDescription)"
-            // Preserve the last successfully displayed data and block writes until retry.
+            // Preserve displayed data; the form can still save a replacement.
             hasLoaded = false
         }
     }
 
     func saveRegimen() async {
-        guard hasLoaded, !isBusy else { return }
+        guard !isBusy else { return }
         isBusy = true
         defer { isBusy = false }
         refreshTime()
@@ -113,6 +111,8 @@ final class RegimenViewModel {
             let regimen = try schedule.extending(draft, through: schedule.horizon(for: draft, now: now))
             try await repository.save(regimen)
             savedRegimen = regimen
+            loadError = nil
+            hasLoaded = true
             pastCount = 2
             futureCount = 1
             present("Regimen saved successfully.")

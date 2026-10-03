@@ -15,7 +15,6 @@ struct RegimenView: View {
                             .disabled(model.isBusy)
                     }
                 }
-                RegimenFormSection(model: model)
                 RegimenSummarySection(regimen: model.savedRegimen, title: model.regimenTitle)
                 Section("Injection events") {
                     if model.hasMorePast {
@@ -32,7 +31,7 @@ struct RegimenView: View {
                         Button("Show more future injections…") { Task { await model.showMoreFuture() } }
                     }
                 }
-                .disabled(model.isBusy || !model.hasLoaded)
+                RegimenFormSection(model: model)
             }
             .navigationTitle("Regimen")
             .task(id: scenePhase) {
