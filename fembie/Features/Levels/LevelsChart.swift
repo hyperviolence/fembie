@@ -6,17 +6,31 @@ struct LevelsChart: View {
     let points: [PredictionPoint]
     let now: Date
     var showsRateOfChange = false
+    let showWellbeing
 
     var body: some View {
         Chart {
             ForEach(points.filter { $0.timestamp <= now }, id: \.timestamp) { point in
-                LineMark(x: .value("Time", point.timestamp),
-                         y: .value("Value", showsRateOfChange
-                            ? point.rateOfChangePicogramsPerMilliliterPerHour
-                            : point.estradiolPicogramsPerMilliliter),
-                         series: .value("Period", "History"))
+                if (point.timestamp == now) {
+                    PointMark(
+                            x: .value("Time", point.timestamp),
+                            y: .value("Value", showsRateOfChange
+                                      ? point.rateOfChangePicogramsPerMilliliterPerHour
+                                      : point.estradiolPicogramsPerMilliliter)
+                        )
+                        .symbol {
+                            PulsingPoint()
+                        }
+                } else {
+                    LineMark(x: .value("Time", point.timestamp),
+                             y: .value("Value", showsRateOfChange
+                                       ? point.rateOfChangePicogramsPerMilliliterPerHour
+                                       : point.estradiolPicogramsPerMilliliter),
+                             series: .value("Period", "History"))
                     .foregroundStyle(.tint)
+                }
             }
+            
             ForEach(points.filter { $0.timestamp >= now }, id: \.timestamp) { point in
                 LineMark(x: .value("Time", point.timestamp),
                          y: .value("Value", showsRateOfChange

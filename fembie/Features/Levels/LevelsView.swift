@@ -5,6 +5,7 @@ struct LevelsView: View {
     @Environment(RegimenViewModel.self) private var regimenModel
     @Environment(\.scenePhase) private var scenePhase
     @State private var model = LevelsViewModel()
+    @State private var showWellbeing: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -15,10 +16,15 @@ struct LevelsView: View {
                             Text(current.estradiolPicogramsPerMilliliter,
                                  format: .number.precision(.fractionLength(0)))
                         }
-                        LevelsChart(points: model.points, now: current.timestamp)
-                        Text("Dashed line: projection assuming future injections are taken as scheduled.")
+                        LevelsChart(points: model.points, now: current.timestamp, showWellbeing: showWellbeing)
+                        Text("Dashed line: projection assuming future injections are taken as scheduled. This is a rough estimation: DO NOT take as medical advice.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        Picker("Mode", selection: $showWellbeing) {
+                            Text("E2").tag(false)
+                            Text("E2 + Wellbeing").tag(true)
+                        }
+                        .pickerStyle(.segmented)
                     } else if model.isLoading {
                         ProgressView("Calculating estimates")
                     } else {
@@ -39,7 +45,7 @@ struct LevelsView: View {
                                     .foregroundColor(.red)
                             }
                         }
-                        LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true)
+                        LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true, showWellbeing: showWellbeing)
                     } else {
                         Text("The graph appears when an estimate is available.")
                             .foregroundStyle(.secondary)
