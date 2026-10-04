@@ -15,8 +15,11 @@ struct ContentView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView().environment(RegimenViewModel(repository: FileTrackingRepository(
+        let repository = FileTrackingRepository(
             baseURL: URL.temporaryDirectory.appending(path: "FemmeTrackPreview-\(UUID())")
-        )))
+        )
+        return ContentView()
+            .environment(RegimenViewModel(repository: repository))
+            .environment(CheckInViewModel(repository: repository))
     }
 }

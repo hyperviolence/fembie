@@ -4,8 +4,7 @@ import Foundation
 nonisolated struct CheckIn: Identifiable, Codable, Sendable {
     let id: UUID
     let recordedAt: Date
-    let mood: Int
-    let libido: Int
-    let energy: Int
-    // TODO: Validate each response in 0...10 before saving.
+    let mood: Double
+    let libido: Double
+    let energy: Double
 }
