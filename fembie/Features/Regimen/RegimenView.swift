@@ -21,7 +21,7 @@ struct RegimenView: View {
                         Button("Show more past injections…", action: model.showMorePast)
                     }
                     ForEach(model.visibleEvents) { event in
-                        InjectionEventRow(event: event, model: model)
+                        InjectionEventRow(model: model, event: event)
                     }
                     if model.visibleEvents.isEmpty {
                         ContentUnavailableView("No scheduled injections", systemImage: "calendar",

@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct InjectionEventRow: View {
-    let event: InjectionEvent
     @Bindable var model: RegimenViewModel
+    @State private var showingDelayPicker = false
+    let event: InjectionEvent
+    @State private var delayedUntil = Date()
 
     var body: some View {
         let status = InjectionStatus(event: event, now: model.now)
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 15) {
             Text(event.scheduledAt, format: .dateTime.day().month().year().hour().minute())
                 .font(.headline)
             Label(status.title, systemImage: status.systemImage)
@@ -24,8 +26,14 @@ struct InjectionEventRow: View {
                         Task { await model.setAdjustment(eventID: event.id, to: .skipped) }
                     }
                         .disabled(event.adjustment == .skipped)
-                    Button("Delayed") { }.disabled(true)
+                    Button("Delayed") {
+                        showingDelayPicker = true
+                    }
+                    .popover(isPresented: $showingDelayPicker) {
+                        DelayPopover(event: event, isPresented: $showingDelayPicker, model: model)
+                    }
                 }
+                
                 VStack(alignment: .leading) {
                     Button("Taken") {
                         Task { await model.setAdjustment(eventID: event.id, to: .confirmed) }
@@ -35,7 +43,12 @@ struct InjectionEventRow: View {
                         Task { await model.setAdjustment(eventID: event.id, to: .skipped) }
                     }
                         .disabled(event.adjustment == .skipped)
-                    Button("Delayed") { }.disabled(true)
+                    Button("Delayed") {
+                        showingDelayPicker = true
+                    }
+                    .popover(isPresented: $showingDelayPicker) {
+                        DelayPopover(event: event, isPresented: $showingDelayPicker, model: model)
+                    }
                 }
             }
             .buttonStyle(.bordered)
