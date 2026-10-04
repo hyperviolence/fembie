@@ -28,6 +28,17 @@ struct LevelsView: View {
                 }
                 Section("Rate of change · dE2/dt") {
                     if let current = model.current {
+                        LabeledContent("Estimated now · (pg/mL)/hour") {
+                            if (current.rateOfChangePicogramsPerMilliliterPerHour >= 0) {
+                                Label("Arrow", systemImage: "arrow.up")
+                                    .labelStyle(.iconOnly)
+                                    .foregroundColor(.green)
+                            } else {
+                                Label("Arrow", systemImage: "arrow.down")
+                                    .labelStyle(.iconOnly)
+                                    .foregroundColor(.red)
+                            }
+                        }
                         LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true)
                     } else {
                         Text("The graph appears when an estimate is available.")
