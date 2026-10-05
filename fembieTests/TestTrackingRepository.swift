@@ -3,6 +3,7 @@ import Foundation
 
 actor TestTrackingRepository: TrackingRepository {
     var storedRegimens: [Regimen]
+    var storedLabResults: [LabResult] = []
     var failReads = false
     var failWrites = false
     var writeDelay: Duration = .zero
@@ -20,6 +21,14 @@ actor TestTrackingRepository: TrackingRepository {
     }
     func injectionEvents() -> [InjectionEvent] { [] }
     func checkIns() -> [CheckIn] { [] }
+    func labResults() throws -> [LabResult] {
+        if failReads { throw CocoaError(.fileReadCorruptFile) }
+        return storedLabResults
+    }
+    func save(_ result: LabResult) throws {
+        if failWrites { throw CocoaError(.fileWriteNoPermission) }
+        storedLabResults.append(result)
+    }
     func save(_ regimen: Regimen) async throws {
         writes += 1
         if writeDelay != .zero { try await Task.sleep(for: writeDelay) }

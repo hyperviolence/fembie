@@ -5,6 +5,9 @@ import SwiftUI
 @Observable
 final class CheckInViewModel {
     private(set) var isBusy = false
+    private(set) var isSaving = false
+    private(set) var lastSavedCheckInDate: Date?
+    private(set) var saveError: String?
     private(set) var checkIns: [CheckIn] = []
     private(set) var historyError: String?
     @ObservationIgnored private let repository: any TrackingRepository
@@ -25,14 +28,24 @@ final class CheckInViewModel {
     }
 
     func saveCheckIn(date: Date, mood: Double, libido: Double, energy: Double) async {
-        guard !isBusy else { return }
+        guard !isBusy else {
+            saveError = isSaving ? "A check-in is already being saved." : "Check-ins are still loading. Please try again."
+            return
+        }
         isBusy = true
-        defer { isBusy = false }
+        isSaving = true
+        lastSavedCheckInDate = nil
+        saveError = nil
+        defer {
+            isBusy = false
+            isSaving = false
+        }
         do {
             let checkIn = CheckIn(id: UUID(), recordedAt: date, mood: mood, libido: libido, energy: energy)
             try await repository.save(checkIn)
+            lastSavedCheckInDate = date
         } catch {
-            historyError = "Could not save check-in: \(error.localizedDescription)"
+            saveError = "Could not save check-in: \(error.localizedDescription)"
             return
         }
         do {

@@ -32,9 +32,12 @@ struct CheckInViewModelTests {
         try await repository.save(previous)
         let model = CheckInViewModel(repository: repository)
 
-        await model.saveCheckIn(mood: 8, libido: 6, energy: 9)
+        await model.saveCheckIn(date: .now, mood: 8, libido: 6, energy: 9)
 
         #expect(model.checkIns.count == 2)
+        #expect(model.lastSavedCheckInDate == model.checkIns.last?.recordedAt)
+        #expect(model.saveError == nil)
+        #expect(!model.isSaving)
         #expect(model.checkIns.first?.id == previous.id)
         #expect(model.checkIns.last?.mood == 8)
         #expect(model.checkIns.last?.libido == 6)
@@ -58,11 +61,13 @@ struct CheckInViewModelTests {
         try FileManager.default.removeItem(at: file)
         try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
 
-        await model.saveCheckIn(mood: 8, libido: 6, energy: 9)
+        await model.saveCheckIn(date: .now, mood: 8, libido: 6, energy: 9)
 
         #expect(model.checkIns.map(\.id) == [previous.id])
-        #expect(model.historyError != nil)
+        #expect(model.saveError != nil)
+        #expect(model.lastSavedCheckInDate == nil)
         #expect(!model.isBusy)
+        #expect(!model.isSaving)
     }
 
     @Test func dailyAveragesCombineRatingsWithoutChangingSavedCheckIns() async throws {
@@ -114,5 +119,25 @@ struct CheckInViewModelTests {
         let averages = model.dailyAverages(calendar: calendar)
         #expect(averages.count == 2)
         #expect(averages.allSatisfy { calendar.component(.hour, from: $0.date) == 0 })
+    }
+
+    @Test func identicalCheckInsStillSaveIndividuallyAndConfirmSelectedDate() async throws {
+        let directory = URL.temporaryDirectory.appending(path: "CheckInHistoryTests-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let model = CheckInViewModel(repository: FileTrackingRepository(baseURL: directory))
+        let selectedDate = Date(timeIntervalSince1970: 100)
+
+        await model.saveCheckIn(date: selectedDate, mood: 5, libido: 5, energy: 5)
+        await model.saveCheckIn(date: selectedDate, mood: 5, libido: 5, energy: 5)
+
+        #expect(model.checkIns.count == 2)
+        #expect(Set(model.checkIns.map(\.id)).count == 2)
+        #expect(model.lastSavedCheckInDate == selectedDate)
+        #expect(model.saveError == nil)
+        #expect(model.dailyAverages().count == 1)
+        #expect(model.dailyAverages().first?.mood == 5)
+        let persisted = try await FileTrackingRepository(baseURL: directory).checkIns()
+        #expect(persisted.count == 2)
+        #expect(persisted.allSatisfy { $0.recordedAt == selectedDate })
     }
 }

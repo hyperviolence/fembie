@@ -3,6 +3,9 @@ import EstradiolPK
 
 struct LevelsView: View {
     @Environment(RegimenViewModel.self) private var regimenModel
+    @Environment(CheckInViewModel.self) private var checkInModel
+    @Environment(LabResultsViewModel.self) private var labResultsModel
+    @AppStorage("useLatestE2ResultForLevelsCalibration") private var useLatestE2ResultForCalibration = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var model = LevelsViewModel()
     @State private var showWellbeing: Bool = false
@@ -16,10 +19,15 @@ struct LevelsView: View {
                             Text(current.estradiolPicogramsPerMilliliter,
                                  format: .number.precision(.fractionLength(0)))
                         }
-                        LevelsChart(points: model.points, now: current.timestamp, showWellbeing: showWellbeing)
+                        LevelsChart(points: model.points, now: current.timestamp, showWellbeing: showWellbeing, wellbeing: checkInModel.dailyAverages())
                         Text("Dashed line: projection assuming future injections are taken as scheduled. This is a rough estimation: DO NOT take as medical advice.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        if useLatestE2ResultForCalibration {
+                            Text(model.calibrationMessage ?? "Save an E2 result to calibrate estimates.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                         Picker("Mode", selection: $showWellbeing) {
                             Text("E2").tag(false)
                             Text("E2 + Wellbeing").tag(true)
@@ -45,7 +53,7 @@ struct LevelsView: View {
                                     .foregroundColor(.red)
                             }
                         }
-                        LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true, showWellbeing: showWellbeing)
+                        LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true, showWellbeing: showWellbeing, wellbeing: checkInModel.dailyAverages())
                     } else {
                         Text("The graph appears when an estimate is available.")
                             .foregroundStyle(.secondary)
@@ -71,13 +79,19 @@ struct LevelsView: View {
             }
             .navigationTitle("Levels")
         }
+        .task(id: showWellbeing) {
+            if showWellbeing { await checkInModel.loadCheckIns() }
+        }
         .task {
             if !regimenModel.hasLoaded { await regimenModel.load() }
+            await labResultsModel.load()
         }
         .task(id: LevelsPredictionInput(regimen: regimenModel.savedRegimen,
-                                       isActive: scenePhase == .active)) {
+                                       isActive: scenePhase == .active,
+                                       calibrationResult: useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)) {
             let input = LevelsPredictionInput(regimen: regimenModel.savedRegimen,
-                                             isActive: scenePhase == .active)
+                                             isActive: scenePhase == .active,
+                                       calibrationResult: useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)
             guard input.isActive else { return }
             while !Task.isCancelled {
                 await model.refresh(input: input)

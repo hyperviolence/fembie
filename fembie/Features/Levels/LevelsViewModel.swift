@@ -11,6 +11,7 @@ final class LevelsViewModel {
     private(set) var current: PredictionPoint?
     private(set) var message: String?
     private(set) var isLoading = false
+    private(set) var calibrationMessage: String?
 
     @ObservationIgnored private let calculator = LevelsPredictionCalculator()
     @ObservationIgnored private var revision = 0
@@ -22,6 +23,7 @@ final class LevelsViewModel {
         points = []
         current = nil
         message = nil
+        calibrationMessage = nil
         modelIdentifier = nil
         guard let regimen = input.regimen else {
             message = "Save a regimen to see estimated levels."
@@ -38,7 +40,19 @@ final class LevelsViewModel {
             if revision == requestRevision { isLoading = false }
         }
         do {
-            let result = try await calculator.predict(regimen: regimen, now: now)
+            let result: [PredictionPoint]
+            do {
+                result = try await calculator.predict(regimen: regimen, now: now,
+                                                      calibrationResult: input.calibrationResult)
+                guard !Task.isCancelled, revision == requestRevision else { return }
+                if let lab = input.calibrationResult {
+                    calibrationMessage = "Adjusted using the E2 result from \(lab.recordedAt.formatted(date: .abbreviated, time: .shortened))."
+                }
+            } catch LevelsPredictionError.invalidCalibration(let reason) {
+                result = try await calculator.predict(regimen: regimen, now: now)
+                guard !Task.isCancelled, revision == requestRevision else { return }
+                calibrationMessage = "Calibration not applied: \(reason)"
+            }
             guard !Task.isCancelled, revision == requestRevision else { return }
             points = result
             current = result.first { $0.timestamp == now }

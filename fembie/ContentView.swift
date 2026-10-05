@@ -3,12 +3,18 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         TabView {
-            LevelsView()
-                .tabItem { Label("Levels", systemImage: "chart.xyaxis.line") }
-            CheckInView()
-                .tabItem { Label("Wellbeing", systemImage: "heart") }
-            RegimenView()
-                .tabItem { Label("Regimen", systemImage: "calendar") }
+            Tab("Levels", systemImage: "chart.xyaxis.line") {
+                LevelsView()
+            }
+            Tab("Wellbeing", systemImage: "heart") {
+                CheckInView()
+            }
+            Tab("Labs", systemImage: "testtube.2") {
+                LabResultsView()
+            }
+            Tab("Regimen", systemImage: "calendar") {
+                RegimenView()
+            }
         }
     }
 }
@@ -21,5 +27,6 @@ struct ContentView_Previews: PreviewProvider {
         return ContentView()
             .environment(RegimenViewModel(repository: repository))
             .environment(CheckInViewModel(repository: repository))
+            .environment(LabResultsViewModel(repository: repository))
     }
 }

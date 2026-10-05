@@ -25,9 +25,29 @@ struct CheckInView: View {
                     .labelsHidden()
                 }
                 Section {
-                    Button("Save check-in") {
-                        Task { await model.saveCheckIn(date: date, mood: mood, libido: libido, energy: energy) }
+                    Button(model.isSaving ? "Saving…" : model.isBusy ? "Loading check-ins…" : "Save check-in") {
+                        let selectedDate = date
+                        let selectedMood = mood
+                        let selectedLibido = libido
+                        let selectedEnergy = energy
+                        Task {
+                            await model.saveCheckIn(date: selectedDate, mood: selectedMood,
+                                                    libido: selectedLibido, energy: selectedEnergy)
+                        }
                     }
+                    .disabled(model.isBusy)
+                    if let savedDate = model.lastSavedCheckInDate {
+                        Label("Check-in saved", systemImage: "checkmark.circle")
+                            .foregroundStyle(.green)
+                        Text(savedDate, format: .dateTime.day().month(.abbreviated).year().hour().minute())
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let saveError = model.saveError {
+                        Text(saveError)
+                            .foregroundStyle(.red)
+                    }
+                    LabeledContent("Saved check-ins", value: model.checkIns.count.formatted())
                 }
                 Section("Check-in history") {
                     if let errorMessage = model.historyError {
@@ -103,6 +123,9 @@ struct CheckInView: View {
                         .chartYAxisLabel("Rating")
                         .frame(height: 220)
                         .accessibilityLabel("Daily average mood, libido, and energy ratings over time")
+                        Text("Each point shows the average of that day's check-ins.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

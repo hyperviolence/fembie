@@ -12,7 +12,7 @@ actor LevelsPredictionCalculator {
         }
     }
 
-    func predict(regimen: Regimen, now: Date) throws -> [PredictionPoint] {
+    func predict(regimen: Regimen, now: Date, calibrationResult: LabResult? = nil) throws -> [PredictionPoint] {
         guard let model = Self.model(for: regimen) else {
             throw LevelsPredictionError.unsupportedRegimen
         }
@@ -30,7 +30,31 @@ actor LevelsPredictionCalculator {
             return DoseAdministration(timestamp: timestamp, milligramsOfEster: event.doseMilligramsOfEster)
         }
         // Hourly points, with now exactly on the grid. Include all preceding doses.
-        let timestamps = (0...672).map { start.addingTimeInterval(Double($0) * 3_600) }
-        return try model.predict(doses: doses, at: timestamps)
+        var timestamps = (0...672).map { start.addingTimeInterval(Double($0) * 3_600) }
+        guard let calibrationResult else { return try model.predict(doses: doses, at: timestamps) }
+        try calibrationResult.validate()
+        guard calibrationResult.test == .e2,
+              calibrationResult.unit.lowercased() == "pg/ml" else {
+            throw LevelsPredictionError.invalidCalibration("Calibration requires an E2 result in pg/mL.")
+        }
+        guard calibrationResult.recordedAt <= now,
+              calibrationResult.recordedAt >= regimen.effectiveFrom else {
+            throw LevelsPredictionError.invalidCalibration("The E2 result must be dated within the current regimen and cannot be in the future.")
+        }
+        let reference = try model.predict(doses: doses, at: [calibrationResult.recordedAt])[0]
+        let offset = calibrationResult.value - reference.estradiolPicogramsPerMilliliter
+        // Include the exact measurement time even when it is between hourly samples.
+        if calibrationResult.recordedAt >= start, !timestamps.contains(calibrationResult.recordedAt) {
+            timestamps.append(calibrationResult.recordedAt)
+            timestamps.sort()
+        }
+        return try model.predict(doses: doses, at: timestamps).map { point in
+            guard point.timestamp >= calibrationResult.recordedAt else { return point }
+            let adjustedLevel = point.estradiolPicogramsPerMilliliter + offset
+            return PredictionPoint(timestamp: point.timestamp,
+                                   estradiolPicogramsPerMilliliter: max(0, adjustedLevel),
+                                   rateOfChangePicogramsPerMilliliterPerHour: adjustedLevel <= 0
+                                    ? 0 : point.rateOfChangePicogramsPerMilliliterPerHour)
+        }
     }
 }

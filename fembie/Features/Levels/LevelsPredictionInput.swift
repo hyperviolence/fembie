@@ -4,9 +4,10 @@ import Foundation
 nonisolated struct LevelsPredictionInput: Equatable, Sendable {
     let regimen: Regimen?
     var isActive = true
+    var calibrationResult: LabResult? = nil
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        guard lhs.isActive == rhs.isActive else { return false }
+        guard lhs.isActive == rhs.isActive, lhs.calibrationResult == rhs.calibrationResult else { return false }
         switch (lhs.regimen, rhs.regimen) {
         case (nil, nil): return true
         case let (left?, right?):

@@ -5,6 +5,7 @@ actor FileTrackingRepository: TrackingRepository {
     private var regimensCache: [Regimen]?
     private var injectionEventsCache: [InjectionEvent]?
     private var checkInsCache: [CheckIn]?
+    private var labResultsCache: [LabResult]?
     private let baseURL: URL
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -13,6 +14,7 @@ actor FileTrackingRepository: TrackingRepository {
         case regimens = "regimens.json"
         case injectionEvents = "injectionEvents.json"
         case checkIns = "checkIns.json"
+        case labResults = "labResults.json"
     }
 
     // Loading happens on the actor, rather than escaping self during initialization.
@@ -45,6 +47,21 @@ actor FileTrackingRepository: TrackingRepository {
         let values: [CheckIn] = try load(from: .checkIns)
         checkInsCache = values
         return values
+    }
+
+    func labResults() throws -> [LabResult] {
+        if let labResultsCache { return labResultsCache }
+        let values: [LabResult] = try load(from: .labResults)
+        labResultsCache = values
+        return values
+    }
+
+    func save(_ result: LabResult) throws {
+        try result.validate()
+        var values = try labResults()
+        upsert(&values, item: result)
+        try persist(values, to: .labResults)
+        labResultsCache = values
     }
 
     func save(_ regimen: Regimen) throws {
