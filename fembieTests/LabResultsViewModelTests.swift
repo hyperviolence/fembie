@@ -129,4 +129,64 @@ struct LabResultsViewModelTests {
         #expect(stored.contains { $0.value == 2.5 && $0.unit == "nmol/L" })
         #expect(stored.contains { $0.value == 20 && $0.unit == "ng/dL" })
     }
+
+    @Test func deletingPersistsAndUpdatesPaginationAndCalibrationSource() async throws {
+        let directory = URL.temporaryDirectory.appending(path: "LabResultsTests-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let repository = FileTrackingRepository(baseURL: directory)
+        for index in 0..<4 {
+            try await repository.save(LabResult(id: UUID(), test: .e2, value: Double(index),
+                                               recordedAt: Date(timeIntervalSince1970: Double(index))))
+        }
+        let model = LabResultsViewModel(repository: repository)
+        await model.load()
+        let latest = try #require(model.latestE2Result)
+        await model.delete(latest)
+        #expect(model.visibleResults.map(\.value) == [2, 1, 0])
+        #expect(model.latestE2Result?.value == 2)
+        #expect(!model.hasMoreResults)
+        let persisted = try await FileTrackingRepository(baseURL: directory).labResults()
+        #expect(persisted.count == 3)
+        #expect(!persisted.contains { $0.id == latest.id })
+        for result in model.results { await model.delete(result) }
+        #expect(model.results.isEmpty)
+        #expect(model.latestE2Result == nil)
+        #expect(try await FileTrackingRepository(baseURL: directory).labResults().isEmpty)
+    }
+
+    @Test func deletionRemovesOnlyTheSelectedRecordEvenForIdenticalResults() async throws {
+        let directory = URL.temporaryDirectory.appending(path: "LabResultsTests-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let repository = FileTrackingRepository(baseURL: directory)
+        let date = Date()
+        let first = LabResult(id: UUID(), test: .shbg, value: 50, recordedAt: date)
+        let second = LabResult(id: UUID(), test: .shbg, value: 50, recordedAt: date)
+        try await repository.save(first)
+        try await repository.save(second)
+        let model = LabResultsViewModel(repository: repository)
+        await model.load()
+        await model.delete(first)
+        #expect(model.results.map(\.id) == [second.id])
+        let persisted = try await FileTrackingRepository(baseURL: directory).labResults()
+        #expect(persisted.map(\.id) == [second.id])
+    }
+
+    @Test func failedDeletionKeepsTheListAndRepositoryCacheIntact() async throws {
+        let directory = URL.temporaryDirectory.appending(path: "LabResultsTests-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let repository = FileTrackingRepository(baseURL: directory)
+        let result = LabResult(id: UUID(), test: .e2, value: 200, recordedAt: .now)
+        try await repository.save(result)
+        let model = LabResultsViewModel(repository: repository)
+        await model.load()
+        let file = directory.appending(path: "labResults.json")
+        try FileManager.default.removeItem(at: file)
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
+        await model.delete(result)
+        #expect(model.results.map(\.id) == [result.id])
+        #expect(model.latestE2Result?.id == result.id)
+        #expect(model.message != nil)
+        #expect(!model.isBusy)
+        #expect(try await repository.labResults().map(\.id) == [result.id])
+    }
 }

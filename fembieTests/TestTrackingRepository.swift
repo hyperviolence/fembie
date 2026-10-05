@@ -29,6 +29,10 @@ actor TestTrackingRepository: TrackingRepository {
         if failWrites { throw CocoaError(.fileWriteNoPermission) }
         storedLabResults.append(result)
     }
+    func deleteLabResult(id: UUID) throws {
+        if failWrites { throw CocoaError(.fileWriteNoPermission) }
+        storedLabResults.removeAll { $0.id == id }
+    }
     func save(_ regimen: Regimen) async throws {
         writes += 1
         if writeDelay != .zero { try await Task.sleep(for: writeDelay) }

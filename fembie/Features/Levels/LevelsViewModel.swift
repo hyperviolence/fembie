@@ -47,6 +47,8 @@ final class LevelsViewModel {
                 guard !Task.isCancelled, revision == requestRevision else { return }
                 if let lab = input.calibrationResult {
                     calibrationMessage = "Adjusted using the E2 result from \(lab.recordedAt.formatted(date: .abbreviated, time: .shortened))."
+                } else if input.calibrationEnabled {
+                    calibrationMessage = "No E2 result is saved. Add an E2 result to apply calibration."
                 }
             } catch LevelsPredictionError.invalidCalibration(let reason) {
                 result = try await calculator.predict(regimen: regimen, now: now)

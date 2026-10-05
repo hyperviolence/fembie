@@ -64,6 +64,14 @@ actor FileTrackingRepository: TrackingRepository {
         labResultsCache = values
     }
 
+    func deleteLabResult(id: UUID) throws {
+        var values = try labResults()
+        guard values.contains(where: { $0.id == id }) else { return }
+        values.removeAll { $0.id == id }
+        try persist(values, to: .labResults)
+        labResultsCache = values
+    }
+
     func save(_ regimen: Regimen) throws {
         try regimen.validate()
         let values = [regimen]

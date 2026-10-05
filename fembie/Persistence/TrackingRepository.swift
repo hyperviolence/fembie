@@ -11,4 +11,5 @@ nonisolated protocol TrackingRepository: Sendable {
     func save(_ event: InjectionEvent) async throws
     func save(_ checkIn: CheckIn) async throws
     func save(_ result: LabResult) async throws
+    func deleteLabResult(id: UUID) async throws
 }

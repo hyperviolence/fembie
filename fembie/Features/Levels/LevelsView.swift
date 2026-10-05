@@ -5,7 +5,6 @@ struct LevelsView: View {
     @Environment(RegimenViewModel.self) private var regimenModel
     @Environment(CheckInViewModel.self) private var checkInModel
     @Environment(LabResultsViewModel.self) private var labResultsModel
-    @AppStorage("useLatestE2ResultForLevelsCalibration") private var useLatestE2ResultForCalibration = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var model = LevelsViewModel()
     @State private var showWellbeing: Bool = false
@@ -23,8 +22,8 @@ struct LevelsView: View {
                         Text("Dashed line: projection assuming future injections are taken as scheduled. This is a rough estimation: DO NOT take as medical advice.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        if useLatestE2ResultForCalibration {
-                            Text(model.calibrationMessage ?? "Save an E2 result to calibrate estimates.")
+                        if labResultsModel.useLatestE2ResultForCalibration {
+                            Text(model.calibrationMessage ?? "Updating calibration…")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -88,10 +87,12 @@ struct LevelsView: View {
         }
         .task(id: LevelsPredictionInput(regimen: regimenModel.savedRegimen,
                                        isActive: scenePhase == .active,
-                                       calibrationResult: useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)) {
+                                       calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
+                                       calibrationResult: labResultsModel.useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)) {
             let input = LevelsPredictionInput(regimen: regimenModel.savedRegimen,
                                              isActive: scenePhase == .active,
-                                       calibrationResult: useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)
+                                       calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
+                                       calibrationResult: labResultsModel.useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)
             guard input.isActive else { return }
             while !Task.isCancelled {
                 await model.refresh(input: input)

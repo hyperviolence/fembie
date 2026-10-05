@@ -4,6 +4,11 @@ import Observation
 @MainActor
 @Observable
 final class LabResultsViewModel {
+    var useLatestE2ResultForCalibration = false {
+        didSet {
+            settings.set(useLatestE2ResultForCalibration, forKey: "useLatestE2ResultForLevelsCalibration")
+        }
+    }
     var test: LabTest = .e2
     var value = ""
     var unit: String { test.unit }
@@ -16,10 +21,13 @@ final class LabResultsViewModel {
 
     @ObservationIgnored private let repository: any TrackingRepository
     @ObservationIgnored private let locale: Locale
+    @ObservationIgnored private let settings: UserDefaults
 
-    init(repository: any TrackingRepository, locale: Locale = .current) {
+    init(repository: any TrackingRepository, locale: Locale = .current, settings: UserDefaults = .standard) {
         self.repository = repository
         self.locale = locale
+        self.settings = settings
+        useLatestE2ResultForCalibration = settings.bool(forKey: "useLatestE2ResultForLevelsCalibration")
     }
 
     var latestE2Result: LabResult? { results.first { $0.test == .e2 } }
@@ -65,6 +73,20 @@ final class LabResultsViewModel {
             try await refreshResults()
         } catch {
             message = "Lab result saved, but the list could not be refreshed: \(error.localizedDescription)"
+        }
+    }
+
+    func delete(_ result: LabResult) async {
+        guard !isBusy else { return }
+        isBusy = true
+        didSave = false
+        message = nil
+        defer { isBusy = false }
+        do {
+            try await repository.deleteLabResult(id: result.id)
+            results.removeAll { $0.id == result.id }
+        } catch {
+            message = "Could not delete lab result: \(error.localizedDescription)"
         }
     }
 
