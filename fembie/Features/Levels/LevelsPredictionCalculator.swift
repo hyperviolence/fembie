@@ -49,7 +49,6 @@ actor LevelsPredictionCalculator {
             timestamps.sort()
         }
         return try model.predict(doses: doses, at: timestamps).map { point in
-            guard point.timestamp >= calibrationResult.recordedAt else { return point }
             let adjustedLevel = point.estradiolPicogramsPerMilliliter + offset
             return PredictionPoint(timestamp: point.timestamp,
                                    estradiolPicogramsPerMilliliter: max(0, adjustedLevel),

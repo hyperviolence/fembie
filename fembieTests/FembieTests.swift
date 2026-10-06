@@ -1,8 +1,8 @@
 import Foundation
 import Testing
-@testable import FemmeTrack
+@testable import fembie
 
-struct FemmeTrackTests {
+struct FembieTests {
     private let start = Date(timeIntervalSince1970: 1_700_000_000)
 
     private func regimen(dose: Double = 2, hours: Double = 24, until: Date? = nil) throws -> Regimen {

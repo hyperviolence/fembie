@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import FemmeTrack
+@testable import fembie
 
 @MainActor
 struct RegimenViewModelTests {

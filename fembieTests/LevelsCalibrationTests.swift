@@ -38,6 +38,84 @@ struct LevelsCalibrationTests {
         }
     }
 
+    @MainActor @Test func savedTroughResultCalibratesDisplayedLevelTo155() async throws {
+        let directory = URL.temporaryDirectory.appending(path: "TroughCalibrationTests-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let settingsName = "TroughCalibrationTests-\(UUID())"
+        let settings = try #require(UserDefaults(suiteName: settingsName))
+        defer { settings.removePersistentDomain(forName: settingsName) }
+        let repository = FileTrackingRepository(baseURL: directory)
+        let regimen = try regimen()
+        // After twenty weekly doses, sample immediately before the next injection.
+        let troughDate = start.addingTimeInterval(20 * regimen.intervalHours * 3600)
+        let labs = LabResultsViewModel(repository: repository,
+                                      locale: Locale(identifier: "en_US"), settings: settings)
+        labs.test = .e2
+        labs.value = "155"
+        labs.recordedAt = troughDate
+        await labs.save()
+        #expect(labs.didSave)
+        #expect(labs.message == nil)
+
+        let reloadedLabs = LabResultsViewModel(repository: FileTrackingRepository(baseURL: directory),
+                                              settings: settings)
+        await reloadedLabs.load()
+        let lab = try #require(reloadedLabs.latestE2Result)
+        #expect(lab.value == 155)
+        #expect(lab.recordedAt == troughDate)
+        let levels = LevelsViewModel()
+        await levels.refresh(input: LevelsPredictionInput(regimen: regimen), now: troughDate)
+        let rawTrough = try #require(levels.current)
+        #expect(rawTrough.estradiolPicogramsPerMilliliter > 300)
+
+        reloadedLabs.useLatestE2ResultForCalibration = true
+        await levels.refresh(input: LevelsPredictionInput(regimen: regimen, calibrationEnabled: true,
+                                                         calibrationResult: reloadedLabs.latestE2Result),
+                             now: troughDate)
+        let calibratedTrough = try #require(levels.current)
+        #expect(abs(calibratedTrough.estradiolPicogramsPerMilliliter - 155) < 1e-9)
+        #expect(levels.message == nil)
+        #expect(levels.calibrationMessage?.contains("Adjusted using") == true)
+        let nextTroughDate = troughDate.addingTimeInterval(regimen.intervalHours * 3600)
+        let nextTrough = try #require(levels.points.first { $0.timestamp == nextTroughDate })
+        #expect(abs(nextTrough.estradiolPicogramsPerMilliliter - 155) < 0.01)
+
+        reloadedLabs.useLatestE2ResultForCalibration = false
+        await levels.refresh(input: LevelsPredictionInput(regimen: regimen), now: troughDate)
+        #expect(levels.current?.estradiolPicogramsPerMilliliter == rawTrough.estradiolPicogramsPerMilliliter)
+        #expect(levels.calibrationMessage == nil)
+    }
+
+    @Test func negativeCalibrationOffsetClampsLevelsAtZero() async throws {
+        var regimen = try regimen()
+        // Keep the next injection outside the prediction window so levels decline.
+        regimen.intervalHours = 30 * 24
+        let calculator = LevelsPredictionCalculator()
+        let labDate = start.addingTimeInterval(14 * 86400)
+        let raw = try await calculator.predict(regimen: regimen, now: labDate)
+        let baseline = try #require(raw.first { $0.timestamp == labDate })
+        #expect(baseline.estradiolPicogramsPerMilliliter > 0)
+        let lab = LabResult(id: UUID(), test: .e2,
+                            value: baseline.estradiolPicogramsPerMilliliter / 2, recordedAt: labDate)
+        let offset = lab.value - baseline.estradiolPicogramsPerMilliliter
+        let belowZeroWithoutClamping = raw.filter {
+            $0.timestamp > labDate && $0.estradiolPicogramsPerMilliliter + offset < 0
+        }
+        // Ensure this scenario actually exercises the zero floor.
+        #expect(!belowZeroWithoutClamping.isEmpty)
+
+        let adjusted = try await calculator.predict(regimen: regimen, now: labDate, calibrationResult: lab)
+        #expect(adjusted.allSatisfy { $0.estradiolPicogramsPerMilliliter >= 0 })
+        let anchored = try #require(adjusted.first { $0.timestamp == labDate })
+        #expect(abs(anchored.estradiolPicogramsPerMilliliter - lab.value) < 1e-9)
+        let adjustedByDate = Dictionary(uniqueKeysWithValues: adjusted.map { ($0.timestamp, $0) })
+        for point in belowZeroWithoutClamping {
+            let clamped = try #require(adjustedByDate[point.timestamp])
+            #expect(clamped.estradiolPicogramsPerMilliliter == 0)
+            #expect(clamped.rateOfChangePicogramsPerMilliliterPerHour == 0)
+        }
+    }
+
     @Test func supportsPositiveOffsetsAndTurningCalibrationOff() async throws {
         let regimen = try regimen()
         let calculator = LevelsPredictionCalculator()

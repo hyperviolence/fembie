@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import FemmeTrack
+@testable import fembie
 
 struct FileTrackingRepositoryTests {
     private func directory() -> URL {
@@ -10,6 +10,79 @@ struct FileTrackingRepositoryTests {
         try Regimen(id: UUID(), ester: "EEn", doseMilligramsOfEster: dose, route: .intramuscular, intervalHours: 168,
                     effectiveFrom: Date(timeIntervalSince1970: 1_700_000_000), effectiveUntil: nil,
                     timeZoneIdentifier: "UTC")
+    }
+
+    @Test func labResultSavePreservesAllFieldsAndUpdatesTheSameRecord() async throws {
+        let url = directory()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let repository = FileTrackingRepository(baseURL: url)
+        #expect(try await repository.labResults().isEmpty)
+        let result = LabResult(id: UUID(), test: .e2, value: 200.5,
+                               recordedAt: Date(timeIntervalSince1970: 1_700_000_000.125))
+        try await repository.save(result)
+        #expect(try await repository.labResults() == [result])
+
+        let updated = LabResult(id: result.id, test: .e2, value: 250.75,
+                                recordedAt: result.recordedAt.addingTimeInterval(60))
+        try await repository.save(updated)
+        #expect(try await repository.labResults() == [updated])
+        #expect(try await FileTrackingRepository(baseURL: url).labResults() == [updated])
+    }
+
+    @Test func labResultDeletionRemovesOnlyTheSelectedRecordFromStorage() async throws {
+        let url = directory()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let repository = FileTrackingRepository(baseURL: url)
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let first = LabResult(id: UUID(), test: .lh, value: 5, recordedAt: date)
+        let second = LabResult(id: UUID(), test: .lh, value: 5, recordedAt: date)
+        try await repository.save(first)
+        try await repository.save(second)
+
+        try await repository.deleteLabResult(id: first.id)
+        #expect(try await repository.labResults() == [second])
+        #expect(try await FileTrackingRepository(baseURL: url).labResults() == [second])
+        // Deleting an already removed record is harmless.
+        try await repository.deleteLabResult(id: first.id)
+        #expect(try await repository.labResults() == [second])
+        try await repository.deleteLabResult(id: second.id)
+        #expect(try await FileTrackingRepository(baseURL: url).labResults().isEmpty)
+    }
+
+    @Test func labResultsSurviveRepositoryRestart() async throws {
+        let url = directory()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let date = Date(timeIntervalSince1970: 1_700_000_000.123456)
+        let results = LabTest.allCases.enumerated().map { index, test in
+            LabResult(id: UUID(), test: test, value: Double(index) + 12.5,
+                      recordedAt: date.addingTimeInterval(Double(index)))
+        }
+        // Keep the writer in a separate scope so reads use a new repository and cache.
+        do {
+            let repository = FileTrackingRepository(baseURL: url)
+            for result in results { try await repository.save(result) }
+        }
+        let restarted = FileTrackingRepository(baseURL: url)
+        #expect(try await restarted.labResults() == results)
+    }
+
+    @Test func invalidStoredLabResultCanBeLoadedAndDeleted() async throws {
+        let url = directory()
+        defer { try? FileManager.default.removeItem(at: url) }
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        let invalid = LabResult(id: UUID(), test: .e2, value: -200,
+                                recordedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        let valid = LabResult(id: UUID(), test: .shbg, value: 50, recordedAt: invalid.recordedAt)
+        #expect(throws: LabResultValidationError.invalidValue) { try invalid.validate() }
+        // Bypass save validation to simulate an invalid record already on disk.
+        let file = url.appending(path: "labResults.json")
+        try JSONEncoder().encode([invalid, valid]).write(to: file)
+
+        let repository = FileTrackingRepository(baseURL: url)
+        #expect(try await repository.labResults() == [invalid, valid])
+        try await repository.deleteLabResult(id: invalid.id)
+        #expect(try await repository.labResults() == [valid])
+        #expect(try await FileTrackingRepository(baseURL: url).labResults() == [valid])
     }
 
     @Test func missingStoreIsEmptyAndSaveReplacesPreviousRegimen() async throws {

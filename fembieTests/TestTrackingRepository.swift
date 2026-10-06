@@ -1,5 +1,5 @@
 import Foundation
-@testable import FemmeTrack
+@testable import fembie
 
 actor TestTrackingRepository: TrackingRepository {
     var storedRegimens: [Regimen]

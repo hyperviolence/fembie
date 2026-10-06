@@ -1,7 +1,9 @@
 import Foundation
+import CoreGraphics
+import SwiftUI
 import Testing
 import EstradiolPK
-@testable import FemmeTrack
+@testable import fembie
 
 struct LevelsPredictionCalculatorTests {
     private let start = Date(timeIntervalSince1970: 1_700_000_000)
@@ -11,6 +13,60 @@ struct LevelsPredictionCalculatorTests {
             doseMilligramsOfEster: 4, route: .intramuscular, intervalHours: 7 * 24, effectiveFrom: start,
             effectiveUntil: nil, timeZoneIdentifier: "Europe/Istanbul")
         return try InjectionSchedule().extending(regimen, through: start.addingTimeInterval(14 * 86_400))
+    }
+
+    @MainActor @Test func wellbeingOverlayKeepsItsScaleAtHighEstradiolLevels() async throws {
+        // Allow the regimen to reach steady state before the displayed 28-day window.
+        let input = try Regimen(id: UUID(), ester: "Estradiol Enanthate (EEn)",
+            doseMilligramsOfEster: 29.2, route: .intramuscular, intervalHours: 7 * 24,
+            effectiveFrom: start, effectiveUntil: nil, timeZoneIdentifier: "Europe/Istanbul")
+        let now = start.addingTimeInterval(84 * 86_400)
+        let points = try await LevelsPredictionCalculator().predict(regimen: input, now: now)
+        let levels = points.map(\.estradiolPicogramsPerMilliliter).sorted()
+        let median = try #require(levels.dropFirst(levels.count / 2).first)
+        #expect((1_900...2_100).contains(median))
+
+        let averages = (-7...0).map { day in
+            DailyCheckInAverage(date: now.addingTimeInterval(Double(day) * 86_400),
+                                mood: 5, libido: 8, energy: 2)
+        }
+        let renderer = ImageRenderer(content:
+            LevelsChart(points: points, now: now, showWellbeing: true, wellbeing: averages)
+                .frame(width: 400, height: 300)
+                .background(.white)
+                .environment(\.colorScheme, .light)
+        )
+        renderer.scale = 1
+        let image = try #require(renderer.cgImage)
+        let context = try #require(CGContext(data: nil, width: image.width, height: image.height,
+            bitsPerComponent: 8, bytesPerRow: image.width * 4,
+            space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        let pixels = try #require(context.data).assumingMemoryBound(to: UInt8.self)
+
+        // Inspect the plotted lines, excluding the axes and the legend below the plot.
+        // A shared E2 axis would squash all three scores against the bottom instead.
+        let bands: [(Color, ClosedRange<Double>)] = [
+            (.purple, 0.1...0.35), // libido 8: near the top
+            (.pink, 0.3...0.6),    // mood 5: near the middle
+            (.orange, 0.55...0.8) // energy 2: near the bottom
+        ]
+        for (color, band) in bands {
+            let resolved = color.resolve(in: EnvironmentValues())
+            var matchingPixels = 0
+            for y in Int(band.lowerBound * Double(image.height))...Int(band.upperBound * Double(image.height)) {
+                for x in (image.width / 3)...(image.width * 2 / 3) {
+                    let offset = y * context.bytesPerRow + x * 4
+                    if abs(Double(pixels[offset]) / 255 - Double(resolved.red)) < 0.08,
+                       abs(Double(pixels[offset + 1]) / 255 - Double(resolved.green)) < 0.08,
+                       abs(Double(pixels[offset + 2]) / 255 - Double(resolved.blue)) < 0.08 {
+                        matchingPixels += 1
+                    }
+                }
+            }
+            #expect(matchingPixels > 50, "The \(color) wellbeing line should occupy its own 0–10 scale.")
+        }
     }
 
     @Test func skippedAndMovedEventsUseEffectiveTimes() async throws {
