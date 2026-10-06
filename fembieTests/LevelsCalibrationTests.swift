@@ -12,7 +12,7 @@ struct LevelsCalibrationTests {
                     effectiveUntil: nil, timeZoneIdentifier: "Europe/Istanbul")
     }
 
-    @Test func subtractsTwoHundredAfterTheExactMeasurementTime() async throws {
+    @Test func subtractsTwoHundredAcrossTheEntireCurve() async throws {
         let regimen = try regimen()
         let calculator = LevelsPredictionCalculator()
         let labDate = start.addingTimeInterval(3 * 86400 + 1800)
@@ -29,11 +29,9 @@ struct LevelsCalibrationTests {
         let adjustedByDate = Dictionary(uniqueKeysWithValues: adjusted.map { ($0.timestamp, $0) })
         for point in raw {
             let actual = try #require(adjustedByDate[point.timestamp])
-            let expected = point.timestamp < labDate ? point.estradiolPicogramsPerMilliliter
-                : max(0, point.estradiolPicogramsPerMilliliter - 200)
+            let expected = max(0, point.estradiolPicogramsPerMilliliter - 200)
             #expect(abs(actual.estradiolPicogramsPerMilliliter - expected) < 1e-9)
-            let expectedRate = point.timestamp >= labDate && expected == 0
-                ? 0 : point.rateOfChangePicogramsPerMilliliterPerHour
+            let expectedRate = expected == 0 ? 0 : point.rateOfChangePicogramsPerMilliliterPerHour
             #expect(actual.rateOfChangePicogramsPerMilliliterPerHour == expectedRate)
         }
     }

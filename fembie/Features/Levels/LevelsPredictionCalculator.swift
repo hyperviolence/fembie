@@ -12,12 +12,15 @@ actor LevelsPredictionCalculator {
         }
     }
 
-    func predict(regimen: Regimen, now: Date, calibrationResult: LabResult? = nil) throws -> [PredictionPoint] {
+    func predict(regimen: Regimen, now: Date, calibrationResult: LabResult? = nil, alignSamplesToHour: Bool = false, horizon: LevelsPredictionHorizon = .chart) throws -> [PredictionPoint] {
         guard let model = Self.model(for: regimen) else {
             throw LevelsPredictionError.unsupportedRegimen
         }
-        let start = now.addingTimeInterval(-14 * 86_400)
-        let end = now.addingTimeInterval(14 * 86_400)
+        // Notifications use a stable clock-hour grid so refreshes do not shift alerts.
+        let anchor = alignSamplesToHour
+            ? Date(timeIntervalSince1970: floor(now.timeIntervalSince1970 / 3_600) * 3_600) : now
+        let start = anchor.addingTimeInterval(-14 * 86_400)
+        let end = anchor.addingTimeInterval(Double(horizon.rawValue) * 86_400)
         let extended = try InjectionSchedule().extending(regimen, through: end)
         let doses = extended.injectionEvents.compactMap { event -> DoseAdministration? in
             guard event.regimenID == regimen.id else { return nil }
@@ -29,8 +32,9 @@ actor LevelsPredictionCalculator {
             }
             return DoseAdministration(timestamp: timestamp, milligramsOfEster: event.doseMilligramsOfEster)
         }
-        // Hourly points, with now exactly on the grid. Include all preceding doses.
-        var timestamps = (0...672).map { start.addingTimeInterval(Double($0) * 3_600) }
+        // Hourly points; chart calls include now exactly. Include all preceding doses.
+        let sampleCount = (14 + horizon.rawValue) * 24
+        var timestamps = (0...sampleCount).map { start.addingTimeInterval(Double($0) * 3_600) }
         guard let calibrationResult else { return try model.predict(doses: doses, at: timestamps) }
         try calibrationResult.validate()
         guard calibrationResult.test == .e2,

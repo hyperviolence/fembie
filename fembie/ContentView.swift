@@ -15,6 +15,9 @@ struct ContentView: View {
             Tab("Regimen", systemImage: "calendar") {
                 RegimenView()
             }
+            Tab("Settings", systemImage: "gearshape") {
+                SettingsView()
+            }
         }
     }
 }
@@ -28,5 +31,6 @@ struct ContentView_Previews: PreviewProvider {
             .environment(RegimenViewModel(repository: repository))
             .environment(CheckInViewModel(repository: repository))
             .environment(LabResultsViewModel(repository: repository))
+            .environment(LevelsNotificationViewModel())
     }
 }

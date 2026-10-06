@@ -17,6 +17,7 @@ struct RegimenFormSection: View {
                     Text(route.displayName).tag(route)
                 }
             }
+            //TODO: add interval in days and hours, a toggle
             TextField("Dose (mg)", text: $model.dose).keyboardType(.decimalPad)
             TextField("Interval (days)", text: $model.intervalDays).keyboardType(.decimalPad)
             DatePicker("First injection", selection: $model.firstInjection)
