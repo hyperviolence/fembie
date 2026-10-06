@@ -54,14 +54,14 @@ final class LevelNotificationScheduler: NSObject, LevelNotificationScheduling, U
         return desired.count
     }
 
-    /// Keep the earliest alerts and leave slots for notifications owned by other features.
+    /// Keep the earliest alerts, reserving at least one slot for the daily check-in reminder.
     static func upcomingEvents(_ events: [LevelNotificationEvent], otherPendingCount: Int,
                                now: Date) -> [LevelNotificationEvent] {
         let upcoming = events.filter { $0.timestamp > now }.sorted {
             if $0.timestamp == $1.timestamp { return $0.id < $1.id }
             return $0.timestamp < $1.timestamp
         }
-        return Array(upcoming.prefix(max(0, 64 - otherPendingCount)))
+        return Array(upcoming.prefix(max(0, 64 - max(1, otherPendingCount))))
     }
 
     static func request(for event: LevelNotificationEvent) -> UNNotificationRequest {

@@ -26,12 +26,12 @@ struct LevelsPredictionCalculatorTests {
         let median = try #require(levels.dropFirst(levels.count / 2).first)
         #expect((1_900...2_100).contains(median))
 
-        let averages = (-7...0).map { day in
-            DailyCheckInAverage(date: now.addingTimeInterval(Double(day) * 86_400),
+        let checkIns = (-7...0).map { day in
+            CheckIn(id: UUID(), recordedAt: now.addingTimeInterval(Double(day) * 86_400),
                                 mood: 5, libido: 8, energy: 2)
         }
         let renderer = ImageRenderer(content:
-            LevelsChart(points: points, now: now, showWellbeing: true, wellbeing: averages)
+            LevelsChart(points: points, now: now, showWellbeing: true, wellbeing: checkIns)
                 .frame(width: 400, height: 300)
                 .background(.white)
                 .environment(\.colorScheme, .light)

@@ -19,7 +19,7 @@ struct LevelsView: View {
                             Text(current.estradiolPicogramsPerMilliliter,
                                  format: .number.precision(.fractionLength(0)))
                         }
-                        LevelsChart(points: model.points, now: current.timestamp, showWellbeing: showWellbeing, wellbeing: checkInModel.dailyAverages())
+                        LevelsChart(points: model.points, now: current.timestamp, showWellbeing: showWellbeing, wellbeing: checkInModel.checkIns)
                         Text("Dashed line: projection assuming future injections are taken as scheduled. This is a rough estimation: DO NOT take as medical advice.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -53,7 +53,7 @@ struct LevelsView: View {
                                     .foregroundColor(.red)
                             }
                         }
-                        LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true, showWellbeing: showWellbeing, wellbeing: checkInModel.dailyAverages())
+                        LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true, showWellbeing: showWellbeing, wellbeing: checkInModel.checkIns)
                     } else {
                         Text("The graph appears when an estimate is available.")
                             .foregroundStyle(.secondary)

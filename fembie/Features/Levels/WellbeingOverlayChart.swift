@@ -2,22 +2,23 @@ import SwiftUI
 
 /// Draws within the E2 plot's frame, using its date range and an independent 0–10 scale.
 struct WellbeingOverlayChart: View {
-    let averages: [DailyCheckInAverage]
+    let checkIns: [CheckIn]
     let dateRange: ClosedRange<Date>
 
     var body: some View {
-        let visibleAverages = averages.filter { dateRange.contains($0.date) }
+        let visibleCheckIns = checkIns.filter { dateRange.contains($0.recordedAt) }
+            .sorted { $0.recordedAt < $1.recordedAt }
         Canvas { context, size in
             let duration = dateRange.upperBound.timeIntervalSince(dateRange.lowerBound)
             guard duration > 0 else { return }
-            let series: [(KeyPath<DailyCheckInAverage, Double>, Color)] = [
+            let series: [(KeyPath<CheckIn, Double>, Color)] = [
                 (\.mood, .pink), (\.libido, .purple), (\.energy, .orange)
             ]
             for (index, series) in series.enumerated() {
-                let positions = visibleAverages.map { average in
+                let positions = visibleCheckIns.map { checkIn in
                     CGPoint(
-                        x: average.date.timeIntervalSince(dateRange.lowerBound) / duration * size.width,
-                        y: (1 - average[keyPath: series.0] / 10) * size.height
+                        x: checkIn.recordedAt.timeIntervalSince(dateRange.lowerBound) / duration * size.width,
+                        y: (1 - checkIn[keyPath: series.0] / 10) * size.height
                     )
                 }
                 var line = Path()
@@ -44,9 +45,9 @@ struct WellbeingOverlayChart: View {
                 }
             }
         }
-        .accessibilityLabel("Daily average mood, libido, and energy on a zero to ten scale")
-        .accessibilityValue(visibleAverages.map { average in
-            "\(average.date.formatted(date: .abbreviated, time: .omitted)): mood \(average.mood.formatted()), libido \(average.libido.formatted()), energy \(average.energy.formatted())"
+        .accessibilityLabel("Mood, libido, and energy at recorded check-in times on a zero to ten scale")
+        .accessibilityValue(visibleCheckIns.map { checkIn in
+            "\(checkIn.recordedAt.formatted(date: .abbreviated, time: .shortened)): mood \(checkIn.mood.formatted()), libido \(checkIn.libido.formatted()), energy \(checkIn.energy.formatted())"
         }.joined(separator: ". "))
     }
 }

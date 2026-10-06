@@ -15,9 +15,10 @@ available. Availability depends on release status and your region.
 - Save a regimen and track scheduled, confirmed, skipped, or moved injections.
 - Plot estimated estradiol levels and their rate of change, with supported
   estradiol enanthate intramuscular and subcutaneous models.
-- Record mood, libido, and energy check-ins and overlay daily averages on the
+- Record mood, libido, and energy check-ins and overlay each check-in at its recorded time on the
   level charts.
 - Save lab results and optionally calibrate estimates using an E2 result.
+- Set an optional daily check-in reminder in Wellbeing.
 - Receive optional notifications for estimated E2 peaks, lows, and rate-of-change
   turning points, forecast up to 90 days ahead. The nearest alerts are queued;
   open the app regularly to refresh them.
@@ -89,7 +90,7 @@ Connect app record.
 - `fembie/Features`: Levels, Regimen, Wellbeing, Labs, and Settings screens and logic.
 - `fembie/Domain`: regimen, injection, check-in, and lab-result data types.
 - `fembie/Persistence`: local storage and repository interfaces.
-- `fembie/Services`: injection scheduling and reminder interfaces.
+- `fembie/Services`: injection scheduling and local notifications.
 - `Packages/EstradiolPK`: prediction models and their numerical tests.
 - `fembieTests`: application logic, persistence, and chart regression tests.
 

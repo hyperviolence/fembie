@@ -56,6 +56,19 @@ actor FileTrackingRepository: TrackingRepository {
         return values
     }
 
+    func resetRegimenData() throws {
+        // Clear the separate event store before the authoritative regimen store.
+        try persist([InjectionEvent](), to: .injectionEvents)
+        injectionEventsCache = []
+        try persist([Regimen](), to: .regimens)
+        regimensCache = []
+    }
+
+    func resetWellbeingData() throws {
+        try persist([CheckIn](), to: .checkIns)
+        checkInsCache = []
+    }
+
     func save(_ result: LabResult) throws {
         try result.validate()
         var values = try labResults()

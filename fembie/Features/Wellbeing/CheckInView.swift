@@ -128,6 +128,7 @@ struct CheckInView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                CheckInReminderSection()
             }
             .navigationTitle("Wellbeing")
             .task { await model.loadCheckIns() }

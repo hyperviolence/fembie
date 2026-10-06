@@ -55,6 +55,20 @@ final class CheckInViewModel {
         }
     }
 
+    func resetData() async throws {
+        guard !isBusy else {
+            throw NSError(domain: "CheckInViewModel", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "Your check-ins are still being updated. Please try again."])
+        }
+        isBusy = true
+        defer { isBusy = false }
+        try await repository.resetWellbeingData()
+        checkIns = []
+        lastSavedCheckInDate = nil
+        saveError = nil
+        historyError = nil
+    }
+
     func dailyAverages(calendar: Calendar = .current) -> [DailyCheckInAverage] {
         let days = Dictionary(grouping: checkIns) { calendar.startOfDay(for: $0.recordedAt) }
         return days.map { date, entries in

@@ -101,6 +101,29 @@ final class RegimenViewModel {
         }
     }
 
+    func resetData() async throws {
+        guard !isBusy else {
+            throw NSError(domain: "RegimenViewModel", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "Your regimen is still being updated. Please try again."])
+        }
+        isBusy = true
+        defer { isBusy = false }
+        try await repository.resetRegimenData()
+        savedRegimen = nil
+        selectedEster = .estradiolEnanthate
+        selectedRoute = .intramuscular
+        dose = ""
+        intervalDays = ""
+        refreshTime()
+        firstInjection = now
+        pastCount = 2
+        futureCount = 1
+        loadError = nil
+        hasLoaded = true
+        showAlert = false
+        alertMessage = ""
+    }
+
     func saveRegimen() async {
         guard !isBusy else { return }
         isBusy = true

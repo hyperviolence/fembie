@@ -7,7 +7,7 @@ struct LevelsChart: View {
     let now: Date
     var showsRateOfChange = false
     var showWellbeing = false
-    var wellbeing: [DailyCheckInAverage] = []
+    var wellbeing: [CheckIn] = []
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -53,7 +53,7 @@ struct LevelsChart: View {
                             if let start = proxy.value(atX: 0, as: Date.self),
                                let end = proxy.value(atX: plotFrame.width, as: Date.self),
                                start < end {
-                                WellbeingOverlayChart(averages: wellbeing, dateRange: start...end)
+                                WellbeingOverlayChart(checkIns: wellbeing, dateRange: start...end)
                                     .frame(width: plotFrame.width, height: plotFrame.height)
                                     .position(x: plotFrame.midX, y: plotFrame.midY)
                                     .allowsHitTesting(false)

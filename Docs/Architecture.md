@@ -8,7 +8,7 @@ It has five tabs: Levels, Wellbeing, Labs, Regimen, and Settings.
 - `Features`: screens and their view models.
 - `Domain`: regimen, injection, check-in, and lab-result types.
 - `Persistence`: the `TrackingRepository` interface and JSON storage.
-- `Services`: injection scheduling and a reminder interface.
+- `Services`: injection scheduling and local notifications.
 - `Packages/EstradiolPK`: pure Swift prediction models.
 
 The app creates one repository and shares it across the regimen, wellbeing,
@@ -53,11 +53,14 @@ falls back to the unadjusted model with an explanation.
 ## Wellbeing and labs
 
 Wellbeing saves dated 0–10 mood, libido, and energy ratings and charts daily
-averages. Levels can overlay those averages on its own independent 0–10 scale.
+averages. Levels overlays individual check-ins at their recorded timestamps on
+its own independent 0–10 scale.
 Labs supports adding, listing, and deleting results, plus the calibration toggle.
 
 Settings contains the project description in About fembie and a Safety notice
-explaining model limitations, intended use, and liability terms.
+explaining model limitations, intended use, and liability terms. Confirmed reset
+actions delete regimen/injection data or wellbeing check-ins; regimen reset
+also cancels its level alerts. Labs and notification preferences are retained.
 
 ## Models and limits
 
@@ -69,10 +72,12 @@ Level alerts use local iOS notifications for selected E2 and signed rate-of-chan
 turning points. The app forecasts up to 90 days while active, updates
 alerts after input changes, and cancels disabled alerts. Pending alerts can fire
 while the app is closed; later events require reopening it. The scheduler keeps
-the nearest alerts within the system's pending-notification budget.
+the nearest alerts within the system's pending-notification budget, reserving
+one slot for a daily check-in reminder.
 
 There is no cloud sync, regimen-version history, or legacy-data migration.
-Check-in reminders have an interface only. Predictions are estimates, not
+Wellbeing can schedule a repeating daily check-in reminder at a chosen local
+time. Turning it off cancels the reminder. Predictions are estimates, not
 blood-test measurements.
 
 ## Tests

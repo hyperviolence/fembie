@@ -39,6 +39,13 @@ actor TestTrackingRepository: TrackingRepository {
         if failWrites { throw CocoaError(.fileWriteNoPermission) }
         storedRegimens = [regimen]
     }
+    func resetRegimenData() throws {
+        if failWrites { throw CocoaError(.fileWriteNoPermission) }
+        storedRegimens = []
+    }
+    func resetWellbeingData() throws {
+        if failWrites { throw CocoaError(.fileWriteNoPermission) }
+    }
     func save(_ event: InjectionEvent) { }
     func save(_ checkIn: CheckIn) { }
 }
