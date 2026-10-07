@@ -7,7 +7,16 @@ final class RegimenViewModel {
     var selectedEster: EstradiolType = .estradiolEnanthate
     var selectedRoute: EstradiolRoute = .intramuscular
     var dose = ""
-    var intervalDays = ""
+    var interval = ""
+    var intervalUnit: RegimenIntervalUnit = .days {
+        didSet {
+            guard intervalUnit != oldValue, let value = parseNumber(interval) else { return }
+            let converted = value * Double(oldValue.rawValue) / Double(intervalUnit.rawValue)
+            guard converted.isFinite else { return }
+            interval = converted.formatted(.number.locale(locale).grouping(.never)
+                .precision(.significantDigits(1...15)))
+        }
+    }
     var firstInjection: Date
     var showAlert = false
     private(set) var alertMessage = ""
@@ -84,8 +93,10 @@ final class RegimenViewModel {
         refreshTime()
         do {
             if let saved = try await repository.regimens().first {
-                let extended = try schedule.extending(saved, through: schedule.horizon(for: saved, now: now))
-                if extended.injectionEvents.count != saved.injectionEvents.count {
+                let repaired = RegimenScheduleRepair.restoringScheduledDates(in: saved)
+                let input = repaired ?? saved
+                let extended = try schedule.extending(input, through: schedule.horizon(for: input, now: now))
+                if repaired != nil || extended.injectionEvents.count != saved.injectionEvents.count {
                     try await repository.save(extended)
                 }
                 savedRegimen = extended
@@ -113,7 +124,8 @@ final class RegimenViewModel {
         selectedEster = .estradiolEnanthate
         selectedRoute = .intramuscular
         dose = ""
-        intervalDays = ""
+        interval = ""
+        intervalUnit = .days
         refreshTime()
         firstInjection = now
         pastCount = 2
@@ -148,12 +160,29 @@ final class RegimenViewModel {
         guard hasLoaded, !isBusy, var regimen = savedRegimen,
               let index = regimen.injectionEvents.firstIndex(where: { $0.id == eventID }) else { return }
         refreshTime()
-        // A future projection cannot be confirmed as already taken.
-        if adjustment == .confirmed, regimen.injectionEvents[index].scheduledAt > now { return }
-        guard regimen.injectionEvents[index].adjustment != adjustment else { return }
+        let event = regimen.injectionEvents[index]
+        let effectiveTime: Date = if case .moved(let actualAt) = event.adjustment {
+            actualAt
+        } else {
+            event.scheduledAt
+        }
+        let resolved: InjectionAdjustment
+        if adjustment == .confirmed {
+            if case .moved(let actualAt) = event.adjustment, actualAt <= now {
+                resolved = event.adjustment
+            } else if effectiveTime > now {
+                resolved = .moved(actualAt: now)
+            } else {
+                resolved = .confirmed
+            }
+        } else {
+            resolved = adjustment
+        }
+        guard event.adjustment != resolved else { return }
         isBusy = true
         defer { isBusy = false }
-        regimen.injectionEvents[index].adjustment = adjustment
+        // Keep the recurrence date immutable; prediction reads the actual time from .moved.
+        regimen.injectionEvents[index].adjustment = resolved
         do {
             try await repository.save(regimen)
             savedRegimen = regimen
@@ -195,11 +224,11 @@ final class RegimenViewModel {
         guard let dose = parseNumber(dose) else {
             throw RegimenValidationError.invalidDose
         }
-        guard let days = parseNumber(intervalDays) else {
+        guard let intervalValue = parseNumber(interval) else {
             throw RegimenValidationError.invalidInterval
         }
         return try Regimen(id: UUID(), ester: selectedEster.displayName, doseMilligramsOfEster: dose, route: selectedRoute, 
-                           intervalHours: days * 24, effectiveFrom: firstInjection,
+                           intervalHours: intervalValue * Double(intervalUnit.rawValue), effectiveFrom: firstInjection,
                            effectiveUntil: nil, timeZoneIdentifier: TimeZone.current.identifier)
     }
 

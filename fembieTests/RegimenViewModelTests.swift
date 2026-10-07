@@ -10,15 +10,55 @@ struct RegimenViewModelTests {
         let now = now
         let model = RegimenViewModel(repository: repository, locale: locale, clock: { now })
         model.dose = "2"
-        model.intervalDays = "7"
+        model.interval = "7"
         return model
+    }
+
+    @Test func intervalUnitSwitchConvertsValueAndSavesHours() async throws {
+        let repository = TestTrackingRepository()
+        let model = model(repository: repository)
+        #expect(model.intervalUnit == .days)
+        model.intervalUnit = .hours
+        #expect(model.interval == "168")
+        model.interval = "36"
+        await model.saveRegimen()
+        #expect(model.savedRegimen?.intervalHours == 36)
+        model.intervalUnit = .days
+        #expect(model.interval == "1.5")
+        await model.saveRegimen()
+        #expect(model.savedRegimen?.intervalHours == 36)
+        model.intervalUnit = .hours
+        #expect(model.interval == "36")
+        try await model.resetData()
+        #expect(model.intervalUnit == .days)
+        #expect(model.interval.isEmpty)
+    }
+
+    @Test func intervalConversionSupportsLocalizedFractionsAndInvalidInput() async throws {
+        let model = model(repository: TestTrackingRepository(), locale: Locale(identifier: "tr_TR"))
+        model.interval = "3,5"
+        model.intervalUnit = .hours
+        #expect(model.interval == "84")
+        model.interval = "5,5"
+        model.intervalUnit = .days
+        #expect(model.interval.contains(","))
+        await model.saveRegimen()
+        let saved = try #require(model.savedRegimen)
+        #expect(abs(saved.intervalHours - 5.5) < 1e-10)
+        model.interval = "invalid"
+        model.intervalUnit = .hours
+        #expect(model.interval == "invalid")
+        #expect(model.validationMessage != nil)
+        model.interval = ""
+        model.intervalUnit = .days
+        #expect(model.interval.isEmpty)
     }
 
     @Test func localizedInputAndFullValidation() async {
         let model = model(repository: TestTrackingRepository(), locale: Locale(identifier: "tr_TR"))
         await model.load()
         model.dose = "2,5"
-        model.intervalDays = "3,5"
+        model.interval = "3,5"
         #expect(model.canSave)
         await model.saveRegimen()
         #expect(model.savedRegimen?.doseMilligramsOfEster == 2.5)
@@ -31,7 +71,7 @@ struct RegimenViewModelTests {
             #expect(model.savedRegimen?.id == savedID)
         }
         model.dose = "2"
-        model.intervalDays = "0,000001"
+        model.interval = "0,000001"
         #expect(model.validationMessage != nil)
         await model.saveRegimen()
         #expect(model.savedRegimen?.id == savedID)
@@ -89,7 +129,7 @@ struct RegimenViewModelTests {
         var date = now
         let model = RegimenViewModel(repository: repository, locale: Locale(identifier: "en_US"), clock: { date })
         model.dose = "2"
-        model.intervalDays = "7"
+        model.interval = "7"
         model.firstInjection = now.addingTimeInterval(60)
         await model.load()
         await model.saveRegimen()
@@ -172,7 +212,11 @@ struct RegimenViewModelTests {
         let future = try #require(model.savedRegimen?.injectionEvents.first(where: { $0.scheduledAt > now }))
         let writes = await repository.writes
         await model.setAdjustment(eventID: future.id, to: .confirmed)
-        #expect(await repository.writes == writes)
+        #expect(await repository.writes == writes + 1)
+        let taken = try #require(model.savedRegimen?.injectionEvents.first { $0.id == future.id })
+        #expect(taken.scheduledAt == future.scheduledAt)
+        #expect(taken.adjustment == .moved(actualAt: now))
+        #expect(InjectionStatus(event: taken, now: now) == .confirmed)
         await model.showMoreFuture()
         #expect(model.visibleEvents.count == 9)
     }

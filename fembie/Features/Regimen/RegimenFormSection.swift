@@ -17,9 +17,14 @@ struct RegimenFormSection: View {
                     Text(route.displayName).tag(route)
                 }
             }
-            //TODO: add interval in days and hours, a toggle
             TextField("Dose (mg)", text: $model.dose).keyboardType(.decimalPad)
-            TextField("Interval (days)", text: $model.intervalDays).keyboardType(.decimalPad)
+            Picker("Interval unit", selection: $model.intervalUnit) {
+                ForEach(RegimenIntervalUnit.allCases, id: \.self) { unit in
+                    Text(unit.label).tag(unit)
+                }
+            }
+            .pickerStyle(.segmented)
+            TextField(model.intervalUnit.fieldLabel, text: $model.interval).keyboardType(.decimalPad)
             DatePicker("First injection", selection: $model.firstInjection)
             Button("Save regimen") { Task { await model.saveRegimen() } }
                 .disabled(!model.canSave)

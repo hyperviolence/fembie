@@ -6,6 +6,7 @@ struct FemmeTrackApp: App {
     @State private var checkInModel: CheckInViewModel
     @State private var labResultsModel: LabResultsViewModel
     @State private var notifications = LevelsNotificationViewModel()
+    @State private var regimenNotifications = RegimenNotificationViewModel()
     @State private var checkInReminder = CheckInReminderViewModel()
     @Environment(\.scenePhase) private var scenePhase
 
@@ -24,6 +25,21 @@ struct FemmeTrackApp: App {
                 .environment(labResultsModel)
                 .environment(notifications)
                 .environment(checkInReminder)
+                .environment(regimenNotifications)
+                .task(id: RegimenNotificationInput(
+                    prediction: LevelsPredictionInput(regimen: regimenModel.savedRegimen,
+                                                      isActive: scenePhase == .active),
+                    preferences: regimenNotifications.preferences)) {
+                    guard scenePhase == .active else { return }
+                    if !regimenModel.hasLoaded { await regimenModel.load() }
+                    guard !Task.isCancelled else { return }
+                    while !Task.isCancelled {
+                        await regimenNotifications.refresh(regimen: regimenModel.savedRegimen)
+                        guard regimenNotifications.preferences.enabled else { return }
+                        do { try await Task.sleep(for: .seconds(60)) }
+                        catch { return }
+                    }
+                }
                 .task(id: CheckInReminderInput(preferences: checkInReminder.preferences,
                                               isActive: scenePhase == .active)) {
                     guard scenePhase == .active else { return }

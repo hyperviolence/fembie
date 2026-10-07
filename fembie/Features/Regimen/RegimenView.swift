@@ -32,6 +32,7 @@ struct RegimenView: View {
                     }
                 }
                 RegimenFormSection(model: model)
+                RegimenNotificationSection()
             }
             .navigationTitle("Regimen")
             .task(id: scenePhase) {

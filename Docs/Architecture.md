@@ -33,7 +33,10 @@ Calibration and notification preferences are saved in `UserDefaults`.
 
 `InjectionSchedule` spaces injections by elapsed hours and preserves corrections.
 Untouched past injections are assumed taken; skipped events are excluded, and
-moved events use their actual timestamps. Future injections remain projections.
+moved events use their actual timestamps. Marking a future injection taken
+records the current time as an override; past moved injections appear confirmed.
+Recurrence dates remain fixed. Loading repairs recognizable entries from the
+earlier edit that overwrote those dates. Future injections remain projections.
 
 Levels sends the saved regimen to `LevelsPredictionCalculator`, which selects
 an EEn intramuscular or subcutaneous model from `EstradiolPK`. Unsupported
@@ -74,6 +77,12 @@ alerts after input changes, and cancels disabled alerts. Pending alerts can fire
 while the app is closed; later events require reopening it. The scheduler keeps
 the nearest alerts within the system's pending-notification budget, reserving
 one slot for a daily check-in reminder.
+
+Regimen reminders use a chosen advance time: 30 minutes, 1 hour, 3 hours, or
+1 day. They follow scheduled or moved future injections, exclude skipped/taken
+ones, and refresh on changes and app activity. Up to 32 upcoming reminders
+share the notification budget with level alerts and the daily check-in reminder;
+a common coordinator serializes all updates.
 
 There is no cloud sync, regimen-version history, or legacy-data migration.
 Wellbeing can schedule a repeating daily check-in reminder at a chosen local

@@ -21,11 +21,17 @@ final class CheckInReminderScheduler: CheckInReminderScheduling {
     }
 
     func schedule(hour: Int, minute: Int) async throws {
-        try await center.add(Self.request(hour: hour, minute: minute))
+        _ = try await NotificationSchedulingCoordinator.shared.run {
+            try await self.center.add(Self.request(hour: hour, minute: minute))
+            return 1
+        }
     }
 
     func cancel() async {
-        center.removePendingNotificationRequests(withIdentifiers: [Self.identifier])
+        _ = try? await NotificationSchedulingCoordinator.shared.run {
+            self.center.removePendingNotificationRequests(withIdentifiers: [Self.identifier])
+            return 0
+        }
     }
 
     static func request(hour: Int, minute: Int) -> UNNotificationRequest {

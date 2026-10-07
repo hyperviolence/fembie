@@ -21,7 +21,7 @@ struct InjectionEventRow: View {
                     Button("Taken") {
                         Task { await model.setAdjustment(eventID: event.id, to: .confirmed) }
                     }
-                        .disabled(event.scheduledAt > model.now || event.adjustment == .confirmed)
+                        .disabled(status == .confirmed)
                     Button("Skipped") {
                         Task { await model.setAdjustment(eventID: event.id, to: .skipped) }
                     }
@@ -38,7 +38,7 @@ struct InjectionEventRow: View {
                     Button("Taken") {
                         Task { await model.setAdjustment(eventID: event.id, to: .confirmed) }
                     }
-                        .disabled(event.scheduledAt > model.now || event.adjustment == .confirmed)
+                        .disabled(status == .confirmed)
                     Button("Skipped") {
                         Task { await model.setAdjustment(eventID: event.id, to: .skipped) }
                     }

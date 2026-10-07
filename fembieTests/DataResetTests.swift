@@ -28,13 +28,13 @@ struct DataResetTests {
         let model = RegimenViewModel(repository: repository, clock: { currentTime })
         await model.load()
         model.dose = "4"
-        model.intervalDays = "7"
+        model.interval = "7"
         model.showMorePast()
         try await model.resetData()
         #expect(model.savedRegimen == nil)
         #expect(model.visibleEvents.isEmpty)
         #expect(model.dose.isEmpty)
-        #expect(model.intervalDays.isEmpty)
+        #expect(model.interval.isEmpty)
         #expect(model.firstInjection == now)
         #expect(model.pastCount == 2)
         #expect(model.hasLoaded)

@@ -4,6 +4,7 @@ struct SettingsDataResetSection: View {
     @Environment(RegimenViewModel.self) private var regimen
     @Environment(CheckInViewModel.self) private var wellbeing
     @Environment(LevelsNotificationViewModel.self) private var notifications
+    @Environment(RegimenNotificationViewModel.self) private var regimenNotifications
     @State private var confirmRegimenReset = false
     @State private var confirmWellbeingReset = false
     @State private var isResetting = false
@@ -24,7 +25,7 @@ struct SettingsDataResetSection: View {
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
-                Text("This permanently deletes your saved regimen and all injection history and adjustments, and cancels its level alerts. This cannot be undone.")
+                Text("This permanently deletes your saved regimen and all injection history and adjustments, and cancels its level alerts and injection reminders. This cannot be undone.")
             }
 
             Button("Reset wellbeing data...", systemImage: "trash", role: .destructive) {
@@ -63,6 +64,7 @@ struct SettingsDataResetSection: View {
             do {
                 if regimenData {
                     try await regimen.resetData()
+                    await regimenNotifications.refresh(regimen: nil)
                     await notifications.refresh(input: LevelsPredictionInput(regimen: nil))
                     completionMessage = "Regimen data reset."
                 } else {

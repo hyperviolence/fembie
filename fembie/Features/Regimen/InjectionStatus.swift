@@ -19,7 +19,7 @@ nonisolated enum InjectionStatus {
         case .none: self = event.scheduledAt > now ? .upcoming : .assumedTaken
         case .confirmed: self = .confirmed
         case .skipped: self = .skipped
-        case .moved: self = .moved
+        case .moved(let actualAt): self = actualAt <= now ? .confirmed : .moved
         }
     }
 

@@ -18,6 +18,7 @@ available. Availability depends on release status and your region.
 - Record mood, libido, and energy check-ins and overlay each check-in at its recorded time on the
   level charts.
 - Save lab results and optionally calibrate estimates using an E2 result.
+- Receive injection reminders 30 minutes, 1 hour, 3 hours, or 1 day in advance.
 - Set an optional daily check-in reminder in Wellbeing.
 - Receive optional notifications for estimated E2 peaks, lows, and rate-of-change
   turning points, forecast up to 90 days ahead. The nearest alerts are queued;

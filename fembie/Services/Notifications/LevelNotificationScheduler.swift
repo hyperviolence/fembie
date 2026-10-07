@@ -4,7 +4,6 @@ import UserNotifications
 @MainActor
 final class LevelNotificationScheduler: NSObject, LevelNotificationScheduling, UNUserNotificationCenterDelegate {
     private let center: UNUserNotificationCenter
-    private var updateTask: Task<Int, any Error>?
 
     init(center: UNUserNotificationCenter = .current()) {
         self.center = center
@@ -23,14 +22,7 @@ final class LevelNotificationScheduler: NSObject, LevelNotificationScheduling, U
     }
 
     func replace(events: [LevelNotificationEvent]) async throws -> Int {
-        // Serialize updates so a slow, older request cannot restore disabled alerts.
-        let previous = updateTask
-        let task = Task { @MainActor in
-            _ = try? await previous?.value
-            return try await reconcile(events: events)
-        }
-        updateTask = task
-        return try await task.value
+        try await NotificationSchedulingCoordinator.shared.run { try await self.reconcile(events: events) }
     }
 
     private func reconcile(events: [LevelNotificationEvent]) async throws -> Int {
