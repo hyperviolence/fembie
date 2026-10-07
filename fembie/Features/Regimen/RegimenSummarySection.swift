@@ -8,6 +8,7 @@ struct RegimenSummarySection: View {
         Section(title) {
             if let regimen {
                 LabeledContent("Ester", value: regimen.ester)
+                LabeledContent("Route", value: regimen.route.displayName)
                 LabeledContent("Dose", value: regimen.doseMilligramsOfEster.formatted(.number.precision(.fractionLength(0...2))) + " mg")
                 LabeledContent("Interval", value: (regimen.intervalHours / 24).formatted(.number.precision(.fractionLength(0...2))) + " days")
                 LabeledContent("Effective from", value: regimen.effectiveFrom.formatted(date: .abbreviated, time: .shortened))
