@@ -32,8 +32,8 @@ struct DelayPopover: View {
                 .buttonBorderShape(.capsule)
             }
         }
-        .frame(minWidth: 380, minHeight: 320)
-        .presentationCompactAdaptation(.popover)
+        .padding()
+        .presentationSizing(.form)
     }
     
 }
