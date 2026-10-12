@@ -131,7 +131,14 @@ struct CheckInView: View {
                 CheckInReminderSection()
             }
             .navigationTitle("Wellbeing")
-            .task { await model.loadCheckIns() }
+            .task {
+                await model.loadCheckIns()
+                if !model.checkIns.isEmpty {
+                    mood = model.checkIns.last!.mood
+                    energy = model.checkIns.last!.energy
+                    libido = model.checkIns.last!.libido
+                }
+            }
         }
     }
 
