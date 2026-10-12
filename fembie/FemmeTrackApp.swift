@@ -5,6 +5,7 @@ struct FemmeTrackApp: App {
     @State private var regimenModel: RegimenViewModel
     @State private var checkInModel: CheckInViewModel
     @State private var labResultsModel: LabResultsViewModel
+    @State private var dataExportModel: DataExportViewModel
     @State private var notifications = LevelsNotificationViewModel()
     @State private var regimenNotifications = RegimenNotificationViewModel()
     @State private var checkInReminder = CheckInReminderViewModel()
@@ -15,6 +16,7 @@ struct FemmeTrackApp: App {
         _regimenModel = State(initialValue: RegimenViewModel(repository: repository))
         _checkInModel = State(initialValue: CheckInViewModel(repository: repository))
         _labResultsModel = State(initialValue: LabResultsViewModel(repository: repository))
+        _dataExportModel = State(initialValue: DataExportViewModel(repository: repository))
     }
 
     var body: some Scene {
@@ -23,6 +25,7 @@ struct FemmeTrackApp: App {
                 .environment(regimenModel)
                 .environment(checkInModel)
                 .environment(labResultsModel)
+                .environment(dataExportModel)
                 .environment(notifications)
                 .environment(checkInReminder)
                 .environment(regimenNotifications)

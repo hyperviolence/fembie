@@ -20,14 +20,9 @@ struct SettingsView: View {
                     } label: {
                         Label("Privacy notice", systemImage: "hand.raised")
                     }
-                    NavigationLink {
-                      //TODO
-                    } label: {
-                        Label("Export data...", systemImage: "tray.and.arrow.up")
-                    }
-                    .disabled(true)
                 }
-                
+
+                SettingsDataExportSection()
                 SettingsDataResetSection()
             }
             .navigationTitle("Settings")

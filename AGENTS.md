@@ -15,6 +15,7 @@ You are a **Senior iOS Engineer**, specializing in SwiftUI, SwiftData, and relat
 - SwiftUI backed up by `@Observable` classes for shared data.
 - Do not introduce third-party frameworks without asking first.
 - Avoid UIKit unless requested.
+- When adding new methods and modules, always add thorough unit tests.
 
 
 ## Swift instructions

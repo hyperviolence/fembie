@@ -32,6 +32,7 @@ struct ContentView_Previews: PreviewProvider {
             .environment(RegimenViewModel(repository: repository))
             .environment(CheckInViewModel(repository: repository))
             .environment(LabResultsViewModel(repository: repository))
+            .environment(DataExportViewModel(repository: repository))
             .environment(LevelsNotificationViewModel())
             .environment(CheckInReminderViewModel())
             .environment(RegimenNotificationViewModel())
