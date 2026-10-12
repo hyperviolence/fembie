@@ -15,7 +15,19 @@ struct SettingsView: View {
                     } label: {
                         Label("Safety notice", systemImage: "exclamationmark.shield")
                     }
+                    NavigationLink {
+                        PrivacyNoticeView()
+                    } label: {
+                        Label("Privacy notice", systemImage: "hand.raised")
+                    }
+                    NavigationLink {
+                      //TODO
+                    } label: {
+                        Label("Export data...", systemImage: "tray.and.arrow.up")
+                    }
+                    .disabled(true)
                 }
+                
                 SettingsDataResetSection()
             }
             .navigationTitle("Settings")
