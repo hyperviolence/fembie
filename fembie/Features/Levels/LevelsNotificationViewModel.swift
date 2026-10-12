@@ -16,13 +16,16 @@ final class LevelsNotificationViewModel {
 
     @ObservationIgnored private let settings: UserDefaults
     @ObservationIgnored private let scheduler: any LevelNotificationScheduling
-    @ObservationIgnored private let calculator = LevelsPredictionCalculator()
+    @ObservationIgnored private let calculator: any LevelsPredictionCalculating
     @ObservationIgnored private var revision = 0
     private static let settingsKey = "levelsNotificationPreferences"
 
-    init(settings: UserDefaults = .standard, scheduler: any LevelNotificationScheduling = LevelNotificationScheduler()) {
+    init(settings: UserDefaults = .standard,
+         scheduler: any LevelNotificationScheduling = LevelNotificationScheduler(),
+         calculator: any LevelsPredictionCalculating = LevelsPredictionCalculator()) {
         self.settings = settings
         self.scheduler = scheduler
+        self.calculator = calculator
         if let data = settings.data(forKey: Self.settingsKey),
            let saved = try? JSONDecoder().decode(LevelsNotificationPreferences.self, from: data) {
             preferences = saved
@@ -72,7 +75,7 @@ final class LevelsNotificationViewModel {
                 points = try await calculator.predict(regimen: regimen, now: now,
                     calibrationResult: input.calibrationResult, alignSamplesToHour: true, horizon: .notifications)
             } catch LevelsPredictionError.invalidCalibration {
-                points = try await calculator.predict(regimen: regimen, now: now, alignSamplesToHour: true, horizon: .notifications)
+                points = try await calculator.predict(regimen: regimen, now: now, calibrationResult: nil, alignSamplesToHour: true, horizon: .notifications)
             }
             guard isCurrent() else { return }
             let events = LevelEventDetector().events(in: points, kinds: selected.kinds, after: now)

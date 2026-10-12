@@ -48,6 +48,56 @@ struct EnanthateSubcutaneousModelTests {
         }
     }
 
+
+
+    @Test func zeroDoseProducesZeroAndEmptyTimestampsProduceNoPoints() throws {
+        let result = try model.predict(
+            doses: [DoseAdministration(timestamp: origin, milligramsOfEster: 0)],
+            at: [origin.addingTimeInterval(86_400)]
+        )
+        #expect(result.first?.estradiolPicogramsPerMilliliter == 0)
+        #expect(result.first?.rateOfChangePicogramsPerMilliliterPerHour == 0)
+        #expect(try model.predict(doses: [], at: []).isEmpty)
+    }
+
+    @Test func rejectsNonFiniteDoseDatesAndOverflowingFiniteDoses() {
+        #expect(throws: EnanthatePredictionError.self) {
+            try model.predict(
+                doses: [DoseAdministration(
+                    timestamp: Date(timeIntervalSinceReferenceDate: .nan),
+                    milligramsOfEster: 1
+                )],
+                at: [origin]
+            )
+        }
+        #expect(throws: EnanthatePredictionError.self) {
+            try model.predict(
+                doses: [DoseAdministration(timestamp: origin, milligramsOfEster: .greatestFiniteMagnitude)],
+                at: [origin.addingTimeInterval(86_400)]
+            )
+        }
+    }
+
+    @Test func doseAndOutputOrderingAreExplicitAndDuplicateDatesAccumulate() throws {
+        let earlier = DoseAdministration(timestamp: origin, milligramsOfEster: 1)
+        let later = DoseAdministration(timestamp: origin.addingTimeInterval(86_400), milligramsOfEster: 2)
+        let timestamps = [
+            origin.addingTimeInterval(3 * 86_400),
+            origin.addingTimeInterval(2 * 86_400)
+        ]
+        let ordered = try model.predict(doses: [earlier, later], at: timestamps)
+        let reversed = try model.predict(doses: [later, earlier], at: timestamps)
+        #expect(zip(ordered, reversed).allSatisfy {
+            abs($0.estradiolPicogramsPerMilliliter - $1.estradiolPicogramsPerMilliliter) < 1e-12
+        })
+        #expect(ordered.map(\.timestamp) == timestamps)
+
+        let single = try model.predict(doses: [earlier], at: [timestamps[0]])[0]
+        let duplicate = try model.predict(doses: [earlier, earlier], at: [timestamps[0]])[0]
+        #expect(abs(duplicate.estradiolPicogramsPerMilliliter
+                    - 2 * single.estradiolPicogramsPerMilliliter) < 1e-9)
+    }
+
     @Test func rejectsInvalidInputs() {
         for dose in [-1.0, .nan, .infinity] {
             #expect(throws: EnanthatePredictionError.self) {

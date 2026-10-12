@@ -1,8 +1,13 @@
 import Foundation
 import EstradiolPK
 
+nonisolated protocol LevelsPredictionCalculating: Sendable {
+    func predict(regimen: Regimen, now: Date, calibrationResult: LabResult?,
+                 alignSamplesToHour: Bool, horizon: LevelsPredictionHorizon) async throws -> [PredictionPoint]
+}
+
 /// Runs numerical work off the main actor; never changes saved regimens.
-actor LevelsPredictionCalculator {
+actor LevelsPredictionCalculator: LevelsPredictionCalculating {
     nonisolated static func model(for regimen: Regimen) -> (any PredictionModel)? {
         guard regimen.ester == EstradiolType.estradiolEnanthate.displayName else { return nil }
         switch regimen.route {

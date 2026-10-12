@@ -41,8 +41,12 @@ nonisolated struct Regimen: Identifiable, Codable, Sendable {
                 throw RegimenValidationError.invalidSchedule
             }
         }
-        guard TimeZone(identifier: timeZoneIdentifier) != nil else {
+        guard TimeZone(identifier: timeZoneIdentifier) != nil,
+              Set(injectionEvents.map(\.id)).count == injectionEvents.count else {
             throw RegimenValidationError.invalidSchedule
+        }
+        for event in injectionEvents {
+            try event.validate(for: id)
         }
     }
 }

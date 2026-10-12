@@ -13,8 +13,12 @@ final class LevelsViewModel {
     private(set) var isLoading = false
     private(set) var calibrationMessage: String?
 
-    @ObservationIgnored private let calculator = LevelsPredictionCalculator()
+    @ObservationIgnored private let calculator: any LevelsPredictionCalculating
     @ObservationIgnored private var revision = 0
+
+    init(calculator: any LevelsPredictionCalculating = LevelsPredictionCalculator()) {
+        self.calculator = calculator
+    }
 
     func refresh(input: LevelsPredictionInput, now: Date = Date()) async {
         revision += 1
@@ -43,7 +47,8 @@ final class LevelsViewModel {
             let result: [PredictionPoint]
             do {
                 result = try await calculator.predict(regimen: regimen, now: now,
-                                                      calibrationResult: input.calibrationResult)
+                                                      calibrationResult: input.calibrationResult,
+                                                      alignSamplesToHour: false, horizon: .chart)
                 guard !Task.isCancelled, revision == requestRevision else { return }
                 if let lab = input.calibrationResult {
                     calibrationMessage = "Adjusted using the E2 result from \(lab.recordedAt.formatted(date: .abbreviated, time: .shortened))."
@@ -51,7 +56,8 @@ final class LevelsViewModel {
                     calibrationMessage = "No E2 result is saved. Add an E2 result to apply calibration."
                 }
             } catch LevelsPredictionError.invalidCalibration(let reason) {
-                result = try await calculator.predict(regimen: regimen, now: now)
+                result = try await calculator.predict(regimen: regimen, now: now, calibrationResult: nil,
+                                                      alignSamplesToHour: false, horizon: .chart)
                 guard !Task.isCancelled, revision == requestRevision else { return }
                 calibrationMessage = "Calibration not applied: \(reason)"
             }

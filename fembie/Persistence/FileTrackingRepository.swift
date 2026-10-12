@@ -57,10 +57,20 @@ actor FileTrackingRepository: TrackingRepository {
     }
 
     func resetRegimenData() throws {
-        // Clear the separate event store before the authoritative regimen store.
-        try persist([InjectionEvent](), to: .injectionEvents)
+        // A reset must also recover stores whose JSON can no longer be decoded.
+        let previousEvents = try? injectionEvents()
+        let previousRegimens = try? regimens()
+        do {
+            try persist([InjectionEvent](), to: .injectionEvents)
+            try persist([Regimen](), to: .regimens)
+        } catch {
+            // A reset spans two files. Restore either file that was already changed
+            // so callers never observe an intentionally half-cleared repository.
+            if let previousEvents { try? persist(previousEvents, to: .injectionEvents) }
+            if let previousRegimens { try? persist(previousRegimens, to: .regimens) }
+            throw error
+        }
         injectionEventsCache = []
-        try persist([Regimen](), to: .regimens)
         regimensCache = []
     }
 
@@ -93,6 +103,7 @@ actor FileTrackingRepository: TrackingRepository {
     }
 
     func save(_ event: InjectionEvent) throws {
+        try event.validate()
         var values = try injectionEvents()
         upsert(&values, item: event)
         try persist(values, to: .injectionEvents)
@@ -100,11 +111,7 @@ actor FileTrackingRepository: TrackingRepository {
     }
 
     func save(_ checkIn: CheckIn) throws {
-        guard (0...10).contains(checkIn.mood), (0...10).contains(checkIn.libido),
-              (0...10).contains(checkIn.energy) else {
-            throw NSError(domain: "FileTrackingRepository", code: 1001,
-                          userInfo: [NSLocalizedDescriptionKey: "CheckIn responses must be in the range 0...10."])
-        }
+        try checkIn.validate()
         var values = try checkIns()
         upsert(&values, item: checkIn)
         try persist(values, to: .checkIns)

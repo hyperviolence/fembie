@@ -22,38 +22,33 @@ final class RegimenNotificationScheduler: RegimenNotificationScheduling {
 
     private func reconcile(_ events: [RegimenNotificationEvent]) async throws -> Int {
         let pending = await center.pendingNotificationRequests()
-        let owned = pending.filter { $0.identifier.hasPrefix(RegimenNotificationEvent.identifierPrefix) }
-        let levels = pending.filter { $0.identifier.hasPrefix(LevelNotificationEvent.identifierPrefix) }
-        let otherCount = pending.count - owned.count - levels.count
-        let desired = Self.upcomingEvents(events, otherPendingCount: otherCount, now: Date())
-        let desiredIDs = Set(desired.map(\.id))
-        let existingIDs = Set(owned.map(\.identifier))
-        // Keep room for other features, including a daily check-in reminder.
-        let levelSlots = max(0, 64 - max(1, otherCount) - desired.count)
-        let sortedLevels: [UNNotificationRequest] = levels.sorted { left, right in
-            let leftDate = (left.trigger as? UNCalendarNotificationTrigger)?.nextTriggerDate() ?? Date.distantFuture
-            let rightDate = (right.trigger as? UNCalendarNotificationTrigger)?.nextTriggerDate() ?? Date.distantFuture
-            return leftDate < rightDate
+        let snapshots = pending.map {
+            PendingNotificationSnapshot(
+                identifier: $0.identifier,
+                timestamp: ($0.trigger as? UNCalendarNotificationTrigger)?.nextTriggerDate(),
+                body: $0.content.body
+            )
         }
-        let removedLevels = sortedLevels.dropFirst(levelSlots).map { $0.identifier }
-        center.removePendingNotificationRequests(withIdentifiers:
-            Array(existingIDs.subtracting(desiredIDs)) + removedLevels)
+        let plan = NotificationQueuePlanner.regimen(events: events, pending: snapshots, now: Date())
+        center.removePendingNotificationRequests(withIdentifiers: Array(plan.identifiersToRemove))
         do {
-            let existing = Dictionary(uniqueKeysWithValues: owned.map { ($0.identifier, $0) })
-            for event in desired {
+            for event in plan.eventsToAdd {
                 guard event.timestamp > Date() else { continue }
-                let request = Self.request(for: event)
-                if existing[event.id]?.content.body == request.content.body { continue }
-                try await center.add(request)
+                try await center.add(Self.request(for: event))
             }
         } catch {
-            center.removePendingNotificationRequests(withIdentifiers: Array(existingIDs.union(desiredIDs)))
+            let cleanup = NotificationQueuePlanner.failureCleanupIdentifiers(
+                pending: snapshots,
+                desired: plan.desired,
+                ownedPrefix: RegimenNotificationEvent.identifierPrefix
+            )
+            center.removePendingNotificationRequests(withIdentifiers: Array(cleanup))
             throw error
         }
-        return desired.count
+        return plan.desired.count
     }
 
-    static func upcomingEvents(_ events: [RegimenNotificationEvent], otherPendingCount: Int,
+    nonisolated static func upcomingEvents(_ events: [RegimenNotificationEvent], otherPendingCount: Int,
                                now: Date) -> [RegimenNotificationEvent] {
         let sorted = events.filter { $0.timestamp > now }.sorted {
             if $0.timestamp == $1.timestamp { return $0.id < $1.id }
@@ -62,10 +57,14 @@ final class RegimenNotificationScheduler: RegimenNotificationScheduling {
         return Array(sorted.prefix(min(32, max(0, 64 - max(1, otherPendingCount)))))
     }
 
-    static func request(for event: RegimenNotificationEvent) -> UNNotificationRequest {
+    nonisolated static func contentBody(for event: RegimenNotificationEvent) -> String {
+        "You have an injection scheduled for \(event.injectionAt.formatted(date: .abbreviated, time: .shortened)). Open fembie to review your regimen."
+    }
+
+    nonisolated static func request(for event: RegimenNotificationEvent) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
         content.title = "fembie · Injection reminder"
-        content.body = "You have an injection scheduled for \(event.injectionAt.formatted(date: .abbreviated, time: .shortened)). Open fembie to review your regimen."
+        content.body = contentBody(for: event)
         content.sound = .default
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .gmt
