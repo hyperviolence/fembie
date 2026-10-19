@@ -33,7 +33,8 @@ struct DelayPopover: View {
             }
         }
         .padding()
-        .presentationSizing(.form)
+        .presentationSizing(.fitted)
+        .presentationCompactAdaptation(.popover)
     }
     
 }
