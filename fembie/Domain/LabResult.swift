@@ -7,11 +7,11 @@ nonisolated struct LabResult: Identifiable, Codable, Equatable, Sendable {
     let unit: String
     let recordedAt: Date
 
-    init(id: UUID, test: LabTest, value: Double, recordedAt: Date) {
+    init(id: UUID, test: LabTest, value: Double, unit: String, recordedAt: Date) {
         self.id = id
         self.test = test
         self.value = value
-        self.unit = test.unit
+        self.unit = unit
         self.recordedAt = recordedAt
     }
 

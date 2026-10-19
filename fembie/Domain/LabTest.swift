@@ -8,12 +8,12 @@ nonisolated enum LabTest: String, Codable, CaseIterable, Identifiable, Sendable 
 
     var id: Self { self }
 
-    var unit: String {
+    var unit: Array<String> {
         switch self {
-        case .e2: "pg/mL"
-        case .testosterone: "ng/dL"
-        case .lh: "mIU/mL"
-        case .shbg: "nmol/L"
+        case .e2: ["pg/mL"]
+        case .testosterone: ["ng/dL", "pg/mL"]
+        case .lh: ["mIU/mL", "mlE/ml"]
+        case .shbg: ["nmol/L"]
         }
     }
 }

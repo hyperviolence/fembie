@@ -27,7 +27,11 @@ struct LabResultsView: View {
                     }
                     TextField("Value", text: $model.value)
                         .keyboardType(.decimalPad)
-                    LabeledContent("Unit", value: model.unit)
+                    Picker("Unit", selection: $model.unit) {
+                        ForEach(model.test.unit, id: \.self) { unit in
+                            Text(unit).tag(unit)
+                        }
+                    }
                     DatePicker("Date and time", selection: $model.recordedAt,
                                displayedComponents: [.date, .hourAndMinute])
                 }

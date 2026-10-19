@@ -9,9 +9,15 @@ final class LabResultsViewModel {
             settings.set(useLatestE2ResultForCalibration, forKey: "useLatestE2ResultForLevelsCalibration")
         }
     }
-    var test: LabTest = .e2
+    var test: LabTest = .e2 {
+        didSet {
+            if !test.unit.contains(unit) {
+                unit = test.unit.first ?? ""
+            }
+        }
+    }
     var value = ""
-    var unit: String { test.unit }
+    var unit: String = LabTest.e2.unit.first!
     var recordedAt = Date()
     private(set) var results: [LabResult] = []
     private(set) var visibleCount = 3
@@ -60,7 +66,7 @@ final class LabResultsViewModel {
             guard let number = try? Double(text, format: .number.locale(locale), lenient: false) else {
                 throw LabResultValidationError.invalidValue
             }
-            let result = LabResult(id: UUID(), test: test, value: number, recordedAt: recordedAt)
+            let result = LabResult(id: UUID(), test: test, value: number, unit: unit, recordedAt: recordedAt)
             try result.validate()
             try await repository.save(result)
             didSave = true
