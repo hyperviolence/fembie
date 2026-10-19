@@ -2,14 +2,27 @@ import SwiftUI
 import EstradiolPK
 
 struct LevelsChartDetailView: View {
+    @Environment(CheckInViewModel.self) private var checkInModel
+
     let input: LevelsPredictionInput
     let now: Date
     let showsRateOfChange: Bool
-    let showWellbeing: Bool
-    let wellbeing: [CheckIn]
 
     @State private var model = LevelsViewModel()
     @State private var selectedDate: Date?
+    @State private var mapsWellbeing: Bool
+
+    init(
+        input: LevelsPredictionInput,
+        now: Date,
+        showsRateOfChange: Bool,
+        showWellbeing: Bool
+    ) {
+        self.input = input
+        self.now = now
+        self.showsRateOfChange = showsRateOfChange
+        _mapsWellbeing = State(initialValue: showWellbeing)
+    }
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -18,13 +31,15 @@ struct LevelsChartDetailView: View {
                     points: model.renderedPoints,
                     now: now,
                     showsRateOfChange: showsRateOfChange,
-                    showWellbeing: showWellbeing,
-                    wellbeing: wellbeing,
+                    showWellbeing: mapsWellbeing,
+                    wellbeing: checkInModel.checkIns,
                     isScrollable: true,
                     selectedPoint: model.selectedPoint,
                     selectedDate: $selectedDate
                 )
                 .frame(maxHeight: .infinity)
+
+                LevelsWellbeingMappingControl(isEnabled: $mapsWellbeing)
 
                 Text("Swipe horizontally to explore from the start of the regimen through the next 90 days.")
                     .font(.caption)
@@ -45,6 +60,11 @@ struct LevelsChartDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task(id: input) {
             await model.refresh(input: input, now: now, horizon: .detail)
+        }
+        .task(id: mapsWellbeing) {
+            if mapsWellbeing {
+                await checkInModel.loadCheckIns()
+            }
         }
         .onChange(of: selectedDate) { _, newValue in
             model.selectPoint(nearestTo: newValue)

@@ -29,8 +29,7 @@ struct LevelsView: View {
                                 ),
                                 now: current.timestamp,
                                 showsRateOfChange: false,
-                                showWellbeing: showWellbeing,
-                                wellbeing: checkInModel.checkIns
+                                showWellbeing: showWellbeing
                             )
                         } label: {
                             LevelsChart(points: model.points, now: current.timestamp, showWellbeing: showWellbeing, wellbeing: checkInModel.checkIns)
@@ -80,8 +79,7 @@ struct LevelsView: View {
                                 ),
                                 now: current.timestamp,
                                 showsRateOfChange: true,
-                                showWellbeing: showWellbeing,
-                                wellbeing: checkInModel.checkIns
+                                showWellbeing: showWellbeing
                             )
                         } label: {
                             LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true, showWellbeing: showWellbeing, wellbeing: checkInModel.checkIns)
