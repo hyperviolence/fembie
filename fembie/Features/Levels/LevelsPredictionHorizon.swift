@@ -1,5 +1,13 @@
-/// Chart and notification forecasts have independent lookahead windows.
-nonisolated enum LevelsPredictionHorizon: Int, Sendable {
-    case chart = 14
-    case notifications = 90
+/// Chart, detail, and notification forecasts have independent time windows.
+nonisolated enum LevelsPredictionHorizon: Sendable {
+    case chart
+    case detail
+    case notifications
+
+    var futureDays: Int {
+        switch self {
+        case .chart: 14
+        case .detail, .notifications: 90
+        }
+    }
 }

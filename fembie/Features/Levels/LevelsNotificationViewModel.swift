@@ -83,7 +83,7 @@ final class LevelsNotificationViewModel {
             guard isCurrent() else { return }
             scheduledCount = count
             if events.isEmpty {
-                message = "No selected turning points are predicted in the next \(LevelsPredictionHorizon.notifications.rawValue) days."
+                message = "No selected turning points are predicted in the next \(LevelsPredictionHorizon.notifications.futureDays) days."
             } else if count < events.count {
                 message = "The nearest \(count) alerts are scheduled. Open fembie regularly to schedule later events."
             }

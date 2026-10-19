@@ -78,6 +78,57 @@ struct LevelsViewModelStateTests {
         #expect(model.message != nil)
     }
 
+    @Test func chartSelectionSnapsToNearestPredictionPointAndClears() async throws {
+        struct Calculator: LevelsPredictionCalculating {
+            func predict(regimen: Regimen, now: Date, calibrationResult: LabResult?,
+                         alignSamplesToHour: Bool,
+                         horizon: LevelsPredictionHorizon) async throws -> [PredictionPoint] {
+                (0...2).map { hour in
+                    PredictionPoint(
+                        timestamp: now.addingTimeInterval(Double(hour) * 3_600),
+                        estradiolPicogramsPerMilliliter: Double(hour),
+                        rateOfChangePicogramsPerMilliliterPerHour: Double(hour)
+                    )
+                }
+            }
+        }
+
+        let model = LevelsViewModel(calculator: Calculator())
+        await model.refresh(input: LevelsPredictionInput(regimen: try regimen(dose: 2)), now: now)
+        model.selectPoint(nearestTo: now.addingTimeInterval(4_800))
+
+        #expect(model.selectedPoint?.timestamp == now.addingTimeInterval(3_600))
+
+        model.selectPoint(nearestTo: nil)
+        #expect(model.selectedPoint == nil)
+    }
+
+    @Test func largeDetailWindowUsesStableBoundedRenderData() async throws {
+        struct Calculator: LevelsPredictionCalculating {
+            func predict(regimen: Regimen, now: Date, calibrationResult: LabResult?,
+                         alignSamplesToHour: Bool,
+                         horizon: LevelsPredictionHorizon) async throws -> [PredictionPoint] {
+                (0..<46_000).map { hour in
+                    PredictionPoint(
+                        timestamp: now.addingTimeInterval(Double(hour) * 3_600),
+                        estradiolPicogramsPerMilliliter: Double(hour),
+                        rateOfChangePicogramsPerMilliliterPerHour: Double(hour % 24) - 12
+                    )
+                }
+            }
+        }
+
+        let model = LevelsViewModel(calculator: Calculator())
+        await model.refresh(input: LevelsPredictionInput(regimen: try regimen(dose: 2)), now: now)
+        model.selectPoint(nearestTo: now.addingTimeInterval(40_000.4 * 3_600))
+
+        #expect(model.points.count == 46_000)
+        #expect(model.renderedPoints.count <= 3_010)
+        #expect(model.renderedPoints.first?.timestamp == now)
+        #expect(model.renderedPoints.last?.timestamp == now.addingTimeInterval(45_999 * 3_600))
+        #expect(model.selectedPoint?.timestamp == now.addingTimeInterval(40_000 * 3_600))
+    }
+
     @Test func invalidCalibrationFallbackCannotOverwriteNewerRequest() async throws {
         struct Calculator: LevelsPredictionCalculating {
             func predict(regimen: Regimen, now: Date, calibrationResult: LabResult?,

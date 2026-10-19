@@ -135,6 +135,38 @@ struct LevelsPredictionCalculatorTests {
             - expected[0].rateOfChangePicogramsPerMilliliterPerHour) < 1e-9)
     }
 
+    @Test func detailPredictionCoversRegimenStartThroughNinetyDaysAhead() async throws {
+        let input = try regimen()
+        let now = start.addingTimeInterval(84 * 86_400)
+
+        let points = try await LevelsPredictionCalculator().predict(
+            regimen: input,
+            now: now,
+            horizon: .detail
+        )
+
+        #expect(points.first?.timestamp == input.effectiveFrom)
+        #expect(points.last?.timestamp == now.addingTimeInterval(90 * 86_400))
+        #expect(points.contains { $0.timestamp == now })
+    }
+
+    @Test func detailPredictionStopsWhenRegimenEnds() async throws {
+        var input = try regimen()
+        let now = start.addingTimeInterval(10 * 86_400)
+        let regimenEnd = now.addingTimeInterval(30 * 86_400)
+        input.effectiveUntil = regimenEnd
+
+        let points = try await LevelsPredictionCalculator().predict(
+            regimen: input,
+            now: now,
+            horizon: .detail
+        )
+
+        #expect(points.first?.timestamp == input.effectiveFrom)
+        #expect(points.last?.timestamp == regimenEnd)
+        #expect(points.allSatisfy { $0.timestamp <= regimenEnd })
+    }
+
     @Test func correctionsInvalidatePlotIdentity() throws {
         let original = try regimen()
         var edited = original

@@ -22,7 +22,7 @@ struct LevelsNotificationSection: View {
             }
         } footer: {
             if model.preferences.enabled {
-                Text("Alerts follow estimated turning points over the next \(LevelsPredictionHorizon.notifications.rawValue) days, assuming scheduled injections are taken. Highest and lowest refer to the signed rate of change. Open fembie regularly to keep alerts up to date.")
+                Text("Alerts follow estimated turning points over the next \(LevelsPredictionHorizon.notifications.futureDays) days, assuming scheduled injections are taken. Highest and lowest refer to the signed rate of change. Open fembie regularly to keep alerts up to date.")
             }
             if let message = model.message {
                 Text(message)

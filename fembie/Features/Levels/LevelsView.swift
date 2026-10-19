@@ -19,7 +19,24 @@ struct LevelsView: View {
                             Text(current.estradiolPicogramsPerMilliliter,
                                  format: .number.precision(.fractionLength(0)))
                         }
-                        LevelsChart(points: model.points, now: current.timestamp, showWellbeing: showWellbeing, wellbeing: checkInModel.checkIns)
+                        NavigationLink {
+                            LevelsChartDetailView(
+                                input: LevelsPredictionInput(
+                                    regimen: regimenModel.savedRegimen,
+                                    calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
+                                    calibrationResult: labResultsModel.useLatestE2ResultForCalibration
+                                        ? labResultsModel.latestE2Result : nil
+                                ),
+                                now: current.timestamp,
+                                showsRateOfChange: false,
+                                showWellbeing: showWellbeing,
+                                wellbeing: checkInModel.checkIns
+                            )
+                        } label: {
+                            LevelsChart(points: model.points, now: current.timestamp, showWellbeing: showWellbeing, wellbeing: checkInModel.checkIns)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens a scrollable chart")
                         Text("Dashed line: projection assuming future injections are taken as scheduled. This is a rough estimation: DO NOT take as medical advice.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -53,7 +70,24 @@ struct LevelsView: View {
                                     .foregroundColor(.red)
                             }
                         }
-                        LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true, showWellbeing: showWellbeing, wellbeing: checkInModel.checkIns)
+                        NavigationLink {
+                            LevelsChartDetailView(
+                                input: LevelsPredictionInput(
+                                    regimen: regimenModel.savedRegimen,
+                                    calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
+                                    calibrationResult: labResultsModel.useLatestE2ResultForCalibration
+                                        ? labResultsModel.latestE2Result : nil
+                                ),
+                                now: current.timestamp,
+                                showsRateOfChange: true,
+                                showWellbeing: showWellbeing,
+                                wellbeing: checkInModel.checkIns
+                            )
+                        } label: {
+                            LevelsChart(points: model.points, now: current.timestamp, showsRateOfChange: true, showWellbeing: showWellbeing, wellbeing: checkInModel.checkIns)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens a scrollable chart")
                     } else {
                         Text("The graph appears when an estimate is available.")
                             .foregroundStyle(.secondary)
