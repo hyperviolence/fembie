@@ -87,8 +87,8 @@ struct ViewModelStateMachineTests {
         let firstID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
         let secondID = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
         await repository.seed(labResults: [
-            LabResult(id: secondID, test: .e2, value: 2, recordedAt: date),
-            LabResult(id: firstID, test: .e2, value: 1, recordedAt: date)
+            LabResult(id: secondID, test: .e2, value: 2, unit: "pg/mL", recordedAt: date),
+            LabResult(id: firstID, test: .e2, value: 1, unit: "pg/mL", recordedAt: date)
         ])
         await repository.configure()
         await model.load()
@@ -104,7 +104,7 @@ struct ViewModelStateMachineTests {
         let save = Task { await model.save() }
         while !model.isBusy { await Task.yield() }
         await model.save()
-        await model.delete(LabResult(id: UUID(), test: .e2, value: 1, recordedAt: .now))
+        await model.delete(LabResult(id: UUID(), test: .e2, value: 1, unit: "pg/mL", recordedAt: .now))
         await model.load()
         await save.value
 

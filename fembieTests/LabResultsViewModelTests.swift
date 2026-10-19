@@ -21,7 +21,7 @@ struct LabResultsViewModelTests {
         let saved = try await FileTrackingRepository(baseURL: directory).labResults()
         #expect(saved.count == 4)
         #expect(Set(saved.map(\.test)) == Set(LabTest.allCases))
-        #expect(saved.allSatisfy { $0.value == 12.5 && $0.unit == $0.test.unit && $0.recordedAt == date })
+        #expect(saved.allSatisfy { $0.value == 12.5 && $0.unit == $0.test.unit.first && $0.recordedAt == date })
     }
 
     @Test func newestResultsAppearFirstAndExpandThreeAtATime() async throws {

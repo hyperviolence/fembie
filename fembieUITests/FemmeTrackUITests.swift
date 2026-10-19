@@ -36,7 +36,7 @@ final class FemmeTrackUITests: XCTestCase {
     @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
+        measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true)]) {
             XCUIApplication().launch()
         }
     }
