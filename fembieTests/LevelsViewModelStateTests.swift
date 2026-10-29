@@ -45,6 +45,24 @@ struct LevelsViewModelStateTests {
         #expect(!model.isLoading)
     }
 
+    @Test func backgroundRefreshKeepsLastPredictionVisibleUntilReplacementIsReady() async throws {
+        let model = LevelsViewModel(calculator: ControlledPredictionCalculator())
+        await model.refresh(input: LevelsPredictionInput(regimen: try regimen(dose: 2)), now: now)
+
+        let refresh = Task {
+            await model.refresh(input: LevelsPredictionInput(regimen: try regimen(dose: 1)), now: now)
+        }
+        await Task.yield()
+
+        #expect(model.current?.estradiolPicogramsPerMilliliter == 2)
+        #expect(model.points.map(\.estradiolPicogramsPerMilliliter) == [2])
+        #expect(!model.isLoading)
+
+        try await refresh.value
+        #expect(model.current?.estradiolPicogramsPerMilliliter == 1)
+        #expect(model.points.map(\.estradiolPicogramsPerMilliliter) == [1])
+    }
+
     @Test func cancelledRefreshDoesNotPublishAndClearsLoading() async throws {
         let model = LevelsViewModel(calculator: ControlledPredictionCalculator())
         let task = Task {

@@ -26,50 +26,55 @@ final class LevelsViewModel {
                  horizon: LevelsPredictionHorizon = .chart) async {
         revision += 1
         let requestRevision = revision
-        isLoading = false
-        points = []
-        current = nil
+        let isInitialLoad = current == nil
+        isLoading = isInitialLoad
+        if isInitialLoad {
+            clearPrediction()
+        }
         message = nil
-        calibrationMessage = nil
-        selectedPoint = nil
-        renderedPoints = []
-        modelIdentifier = nil
         guard let regimen = input.regimen else {
+            clearPrediction()
+            isLoading = false
             message = "Save a regimen to see estimated levels."
             return
         }
         guard let predictionModel = LevelsPredictionCalculator.model(for: regimen) else {
+            clearPrediction()
+            isLoading = false
             message = LevelsPredictionError.unsupportedRegimen.localizedDescription
             return
         }
         modelIdentifier = predictionModel.modelIdentifier
         modelSource = predictionModel.modelSource
-        isLoading = true
         defer {
             if revision == requestRevision { isLoading = false }
         }
         do {
             let result: [PredictionPoint]
+            let updatedCalibrationMessage: String?
             do {
                 result = try await calculator.predict(regimen: regimen, now: now,
                                                       calibrationResult: input.calibrationResult,
                                                       alignSamplesToHour: false, horizon: horizon)
                 guard !Task.isCancelled, revision == requestRevision else { return }
                 if let lab = input.calibrationResult {
-                    calibrationMessage = "Adjusted using the E2 result from \(lab.recordedAt.formatted(date: .abbreviated, time: .shortened))."
+                    updatedCalibrationMessage = "Adjusted using the E2 result from \(lab.recordedAt.formatted(date: .abbreviated, time: .shortened))."
                 } else if input.calibrationEnabled {
-                    calibrationMessage = "No E2 result is saved. Add an E2 result to apply calibration."
+                    updatedCalibrationMessage = "No E2 result is saved. Add an E2 result to apply calibration."
+                } else {
+                    updatedCalibrationMessage = nil
                 }
             } catch LevelsPredictionError.invalidCalibration(let reason) {
                 result = try await calculator.predict(regimen: regimen, now: now, calibrationResult: nil,
                                                       alignSamplesToHour: false, horizon: horizon)
                 guard !Task.isCancelled, revision == requestRevision else { return }
-                calibrationMessage = "Calibration not applied: \(reason)"
+                updatedCalibrationMessage = "Calibration not applied: \(reason)"
             }
             guard !Task.isCancelled, revision == requestRevision else { return }
             points = result
             renderedPoints = downsampledPoints(from: result, retaining: now)
             current = result.first { $0.timestamp == now }
+            calibrationMessage = updatedCalibrationMessage
         } catch {
             guard !Task.isCancelled, revision == requestRevision else { return }
             message = "Could not calculate estimated levels: \(error.localizedDescription)"
@@ -97,6 +102,15 @@ final class LevelsViewModel {
 
         guard selectedPoint?.timestamp != points[nearestIndex].timestamp else { return }
         selectedPoint = points[nearestIndex]
+    }
+
+    private func clearPrediction() {
+        points = []
+        current = nil
+        calibrationMessage = nil
+        selectedPoint = nil
+        renderedPoints = []
+        modelIdentifier = nil
     }
 
     private func downsampledPoints(
