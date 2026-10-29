@@ -118,6 +118,25 @@ actor FileTrackingRepository: TrackingRepository {
         checkInsCache = values
     }
 
+    func replaceTrackingData(regimens: [Regimen], injectionEvents: [InjectionEvent], checkIns: [CheckIn]) throws {
+        let previousRegimens = try self.regimens()
+        let previousEvents = try self.injectionEvents()
+        let previousCheckIns = try self.checkIns()
+        do {
+            try persist(regimens, to: .regimens)
+            try persist(injectionEvents, to: .injectionEvents)
+            try persist(checkIns, to: .checkIns)
+        } catch {
+            try? persist(previousRegimens, to: .regimens)
+            try? persist(previousEvents, to: .injectionEvents)
+            try? persist(previousCheckIns, to: .checkIns)
+            throw error
+        }
+        regimensCache = regimens
+        injectionEventsCache = injectionEvents
+        checkInsCache = checkIns
+    }
+
     private func load<Element: Decodable>(from store: Store) throws -> [Element] {
         let data: Data
         do {

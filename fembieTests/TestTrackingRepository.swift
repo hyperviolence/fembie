@@ -96,6 +96,13 @@ actor TestTrackingRepository: TrackingRepository {
         storedInjectionEvents.append(event)
     }
 
+    func replaceTrackingData(regimens: [Regimen], injectionEvents: [InjectionEvent], checkIns: [CheckIn]) throws {
+        if failWrites { throw CocoaError(.fileWriteNoPermission) }
+        storedRegimens = regimens
+        storedInjectionEvents = injectionEvents
+        storedCheckIns = checkIns
+    }
+
     func save(_ checkIn: CheckIn) async throws {
         checkInWrites += 1
         if writeDelay != .zero { try await Task.sleep(for: writeDelay) }

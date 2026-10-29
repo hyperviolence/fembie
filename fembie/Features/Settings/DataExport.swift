@@ -3,9 +3,35 @@ import Foundation
 import UniformTypeIdentifiers
 
 nonisolated struct DataExport: Codable, Sendable {
+    static let currentFormatVersion = 1
+
+    let formatVersion: Int
+    let appVersion: String?
     let regimens: [Regimen]
     let injectionEvents: [InjectionEvent]
     let checkIns: [CheckIn]
+
+    init(formatVersion: Int = Self.currentFormatVersion, appVersion: String? = nil,
+         regimens: [Regimen], injectionEvents: [InjectionEvent], checkIns: [CheckIn]) {
+        self.formatVersion = formatVersion
+        self.appVersion = appVersion
+        self.regimens = regimens
+        self.injectionEvents = injectionEvents
+        self.checkIns = checkIns
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case formatVersion, appVersion, regimens, injectionEvents, checkIns
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        formatVersion = try container.decodeIfPresent(Int.self, forKey: .formatVersion) ?? 1
+        appVersion = try container.decodeIfPresent(String.self, forKey: .appVersion)
+        regimens = try container.decode([Regimen].self, forKey: .regimens)
+        injectionEvents = try container.decode([InjectionEvent].self, forKey: .injectionEvents)
+        checkIns = try container.decode([CheckIn].self, forKey: .checkIns)
+    }
 }
 
 nonisolated struct DataExportFile: Transferable, Sendable {
@@ -26,12 +52,14 @@ nonisolated struct DataExporter: Sendable {
         self.repository = repository
     }
 
-    func makeFile(exportedAt: Date = Date(), calendar: Calendar = .current) async throws -> DataExportFile {
+    func makeFile(exportedAt: Date = Date(), calendar: Calendar = .current,
+                  appVersion: String? = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) async throws -> DataExportFile {
         async let regimens = repository.regimens()
         async let injectionEvents = repository.injectionEvents()
         async let checkIns = repository.checkIns()
 
         let export = try await DataExport(
+            appVersion: appVersion,
             regimens: regimens,
             injectionEvents: injectionEvents,
             checkIns: checkIns

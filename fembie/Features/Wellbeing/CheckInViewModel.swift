@@ -28,6 +28,12 @@ final class CheckInViewModel {
         }
     }
 
+    func reloadCheckIns() async {
+        guard !isBusy else { return }
+        hasLoadedCheckIns = false
+        await loadCheckIns()
+    }
+
     func saveCheckIn(date: Date, mood: Double, libido: Double, energy: Double) async {
         guard !isBusy else {
             saveError = isSaving ? "A check-in is already being saved." : "Check-ins are still loading. Please try again."

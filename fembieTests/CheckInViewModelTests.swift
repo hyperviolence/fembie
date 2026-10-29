@@ -23,6 +23,18 @@ struct CheckInViewModelTests {
         #expect(!model.isBusy)
     }
 
+    @Test func reloadReflectsExternallyReplacedCheckIns() async throws {
+        let repository = TestTrackingRepository()
+        let model = CheckInViewModel(repository: repository)
+        await model.loadCheckIns()
+        let imported = CheckIn(id: UUID(), recordedAt: .now, mood: 4, libido: 5, energy: 6)
+        try await repository.replaceTrackingData(regimens: [], injectionEvents: [], checkIns: [imported])
+
+        await model.reloadCheckIns()
+
+        #expect(model.checkIns.map(\.id) == [imported.id])
+    }
+
     @Test func savingRefreshesHistoryAndSurvivesReload() async throws {
         let directory = URL.temporaryDirectory.appending(path: "CheckInHistoryTests-\(UUID())")
         defer { try? FileManager.default.removeItem(at: directory) }

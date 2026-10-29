@@ -34,6 +34,11 @@ struct FembieApp: App {
                 .environment(notifications)
                 .environment(checkInReminder)
                 .environment(regimenNotifications)
+                .task(id: dataExportModel.importRevision) {
+                    guard dataExportModel.importRevision > 0 else { return }
+                    await regimenModel.load()
+                    await checkInModel.reloadCheckIns()
+                }
                 .task(id: RegimenNotificationInput(
                     prediction: LevelsPredictionInput(regimen: regimenModel.savedRegimen,
                                                       isActive: scenePhase == .active),
