@@ -1,21 +1,23 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Bindable var navigation: NotificationNavigationModel
+
     var body: some View {
-        TabView {
-            Tab("Levels", systemImage: "chart.xyaxis.line") {
+        TabView(selection: $navigation.selectedTab) {
+            Tab("Levels", systemImage: "chart.xyaxis.line", value: .levels) {
                 LevelsView()
             }
-            Tab("Wellbeing", systemImage: "heart") {
+            Tab("Wellbeing", systemImage: "heart", value: .wellbeing) {
                 CheckInView()
             }
-            Tab("Labs", systemImage: "testtube.2") {
+            Tab("Labs", systemImage: "testtube.2", value: .labs) {
                 LabResultsView()
             }
-            Tab("Regimen", systemImage: "calendar") {
+            Tab("Regimen", systemImage: "calendar", value: .regimen) {
                 RegimenView()
             }
-            Tab("Settings", systemImage: "gearshape") {
+            Tab("Settings", systemImage: "gearshape", value: .settings) {
                 SettingsView()
             }
         }
@@ -28,7 +30,7 @@ struct ContentView_Previews: PreviewProvider {
         let repository = FileTrackingRepository(
             baseURL: URL.temporaryDirectory.appending(path: "FemmeTrackPreview-\(UUID())")
         )
-        return ContentView()
+        return ContentView(navigation: NotificationNavigationModel())
             .environment(RegimenViewModel(repository: repository))
             .environment(CheckInViewModel(repository: repository))
             .environment(LabResultsViewModel(repository: repository))

@@ -2,13 +2,11 @@ import Foundation
 import UserNotifications
 
 @MainActor
-final class LevelNotificationScheduler: NSObject, LevelNotificationScheduling, UNUserNotificationCenterDelegate {
+final class LevelNotificationScheduler: LevelNotificationScheduling {
     private let center: UNUserNotificationCenter
 
     init(center: UNUserNotificationCenter = .current()) {
         self.center = center
-        super.init()
-        center.delegate = self
     }
 
     func authorize() async throws -> Bool {
@@ -76,10 +74,5 @@ final class LevelNotificationScheduler: NSObject, LevelNotificationScheduling, U
         components.timeZone = calendar.timeZone
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         return UNNotificationRequest(identifier: event.id, content: content, trigger: trigger)
-    }
-
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
     }
 }

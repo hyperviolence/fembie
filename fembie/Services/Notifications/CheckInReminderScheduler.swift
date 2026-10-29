@@ -3,7 +3,7 @@ import UserNotifications
 
 @MainActor
 final class CheckInReminderScheduler: CheckInReminderScheduling {
-    static let identifier = "fembie.checkIn.dailyReminder"
+    nonisolated static let identifier = "fembie.checkIn.dailyReminder"
     private let center: UNUserNotificationCenter
 
     init(center: UNUserNotificationCenter = .current()) {

@@ -9,10 +9,15 @@ struct FemmeTrackApp: App {
     @State private var notifications = LevelsNotificationViewModel()
     @State private var regimenNotifications = RegimenNotificationViewModel()
     @State private var checkInReminder = CheckInReminderViewModel()
+    @State private var navigation: NotificationNavigationModel
+    private let notificationCenterDelegate: NotificationCenterDelegate
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let repository = FileTrackingRepository()
+        let navigation = NotificationNavigationModel()
+        _navigation = State(initialValue: navigation)
+        notificationCenterDelegate = NotificationCenterDelegate(navigation: navigation)
         _regimenModel = State(initialValue: RegimenViewModel(repository: repository))
         _checkInModel = State(initialValue: CheckInViewModel(repository: repository))
         _labResultsModel = State(initialValue: LabResultsViewModel(repository: repository))
@@ -21,7 +26,7 @@ struct FemmeTrackApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(navigation: navigation)
                 .environment(regimenModel)
                 .environment(checkInModel)
                 .environment(labResultsModel)
