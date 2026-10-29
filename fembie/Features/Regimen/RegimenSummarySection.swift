@@ -7,7 +7,7 @@ struct RegimenSummarySection: View {
     var body: some View {
         Section(title) {
             if let regimen {
-                LabeledContent("Ester", value: regimen.ester)
+                LabeledContent("Formulation", value: regimen.ester)
                 LabeledContent("Route", value: regimen.route.displayName)
                 LabeledContent("Dose", value: regimen.doseMilligramsOfEster.formatted(.number.precision(.fractionLength(0...2))) + " mg")
                 LabeledContent("Interval", value: (regimen.intervalHours / 24).formatted(.number.precision(.fractionLength(0...2))) + " days")

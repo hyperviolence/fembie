@@ -25,7 +25,7 @@ struct SettingsDataResetSection: View {
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
-                Text("This permanently deletes your saved regimen and all injection history and adjustments, and cancels its level alerts and injection reminders. This cannot be undone.")
+                Text("This permanently deletes your saved regimen and all dose history and adjustments, and cancels its level alerts and dose reminders. This cannot be undone.")
             }
 
             Button("Reset wellbeing data...", systemImage: "trash", role: .destructive) {

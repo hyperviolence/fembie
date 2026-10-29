@@ -4,7 +4,13 @@ import Observation
 @MainActor
 @Observable
 final class RegimenViewModel {
-    var selectedEster: EstradiolType = .estradiolEnanthate
+    var selectedEster: EstradiolType = .estradiolEnanthate {
+        didSet {
+            if let route = EsterRoutes.getRoutes(ester: selectedEster).first {
+                selectedRoute = route
+            }
+        }
+    }
     var selectedRoute: EstradiolRoute = .intramuscular
     var dose = ""
     var interval = ""
@@ -187,7 +193,7 @@ final class RegimenViewModel {
             try await repository.save(regimen)
             savedRegimen = regimen
         } catch {
-            present("Could not save injection change: \(error.localizedDescription). Your previous status is unchanged.")
+            present("Could not save dose change: \(error.localizedDescription). Your previous status is unchanged.")
         }
     }
 

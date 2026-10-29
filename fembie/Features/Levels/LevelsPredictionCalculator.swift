@@ -9,6 +9,9 @@ nonisolated protocol LevelsPredictionCalculating: Sendable {
 /// Runs numerical work off the main actor; never changes saved regimens.
 actor LevelsPredictionCalculator: LevelsPredictionCalculating {
     nonisolated static func model(for regimen: Regimen) -> (any PredictionModel)? {
+        if regimen.ester == EstradiolType.estradiolGel.displayName, regimen.route == .transdermal {
+            return TransdermalGelModel()
+        }
         guard regimen.ester == EstradiolType.estradiolEnanthate.displayName else { return nil }
         switch regimen.route {
         case .intramuscular: return EnanthateIntramuscularModel()

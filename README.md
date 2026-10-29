@@ -14,7 +14,8 @@ available. Availability depends on release status and your region.
 
 - Save a regimen and track scheduled, confirmed, skipped, or moved injections.
 - Plot estimated estradiol levels and their rate of change, with supported
-  estradiol enanthate intramuscular and subcutaneous models.
+  estradiol enanthate intramuscular and subcutaneous models, plus a generic
+  transdermal gel approximation using only the applied estradiol dose in mg.
 - Record mood, libido, and energy check-ins and overlay each check-in at its recorded time on the
   level charts.
 - Save lab results and optionally calibrate estimates using an E2 result.
@@ -111,8 +112,13 @@ the software.
 Contributions to fembie's own code are intended to use the same GPL v3 license
 and App Store permission. Retain existing copyright and third-party notices.
 
-The estradiol prediction models are native Swift ports of
+The enanthate prediction models are native Swift ports/adaptations of
 [Estrannaise](https://github.com/WHSAH/estrannaise.js). The original model code
 and parameters are MIT licensed, Copyright © 2025 alix. Their license remains in
 [LICENSE-Estrannaise.txt](Packages/EstradiolPK/LICENSE-Estrannaise.txt) and must
 be preserved in source and compiled distributions.
+
+The generic gel model is an original experimental approximation combining
+EstroGel and Divigel label summaries. It requires no brand selection and is not
+clinically validated. Its construction, assumptions and limitations are recorded
+in [TransdermalGel.md](Packages/EstradiolPK/Evidence/TransdermalGel.md).

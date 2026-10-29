@@ -36,7 +36,7 @@ struct LevelsView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("Opens a scrollable chart")
-                        Text("Dashed line: projection assuming future injections are taken as scheduled. This is a rough estimation: DO NOT take as medical advice.")
+                        Text("Dashed line: projection assuming future doses are taken as scheduled. This is a rough estimation: DO NOT take as medical advice.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         if labResultsModel.useLatestE2ResultForCalibration {

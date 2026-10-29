@@ -58,12 +58,12 @@ final class RegimenNotificationScheduler: RegimenNotificationScheduling {
     }
 
     nonisolated static func contentBody(for event: RegimenNotificationEvent) -> String {
-        "You have an injection scheduled for \(event.injectionAt.formatted(date: .abbreviated, time: .shortened)). Open fembie to review your regimen."
+        "You have a dose scheduled for \(event.injectionAt.formatted(date: .abbreviated, time: .shortened)). Open fembie to review your regimen."
     }
 
     nonisolated static func request(for event: RegimenNotificationEvent) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
-        content.title = "fembie · Injection reminder"
+        content.title = "fembie · Dose reminder"
         content.body = contentBody(for: event)
         content.sound = .default
         var calendar = Calendar(identifier: .gregorian)

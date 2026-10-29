@@ -39,8 +39,11 @@ Recurrence dates remain fixed. Loading repairs recognizable entries from the
 earlier edit that overwrote those dates. Future injections remain projections.
 
 Levels sends the saved regimen to `LevelsPredictionCalculator`, which selects
-an EEn intramuscular or subcutaneous model from `EstradiolPK`. Unsupported
-esters or routes show an unavailable state.
+an EEn intramuscular/subcutaneous model or the generic transdermal gel model
+from `EstradiolPK`. Unsupported formulations or routes show an unavailable state.
+Gel requires only the mg of estradiol in each application. Existing persisted
+`doseMilligramsOfEster` and injection-event field names are retained for storage
+compatibility; for gel their dose is active estradiol applied, not gel weight.
 
 The calculator samples hourly across 14 days before and after now. Levels
 shows concentration and rate of change, refreshing every minute while active.
@@ -67,9 +70,16 @@ also cancels its level alerts. Labs and notification preferences are retained.
 
 ## Models and limits
 
-The models are native Swift ports of Estrannaise. The subcutaneous model uses
+The enanthate models are native Swift ports/adaptations of Estrannaise. The subcutaneous model uses
 the IM parameters with a 10% reduction in the absorption rate (`k1`); this is
 a modeling assumption. Details and MIT attribution are in `Packages/EstradiolPK`.
+
+The generic gel approximation equally combines two label-anchored Bateman
+responses using EstroGel and Divigel exposure and apparent terminal rates.
+It has no brand selector. It is not clinically validated and does not estimate
+individual absorption or uncertainty. Full construction and limits are recorded
+in `Packages/EstradiolPK/Evidence/TransdermalGel.md`. Model information shows
+the label sources for gel and retains Estrannaise attribution for enanthate.
 
 Level alerts use local iOS notifications for selected E2 and signed rate-of-change
 turning points. The app forecasts up to 90 days while active, updates

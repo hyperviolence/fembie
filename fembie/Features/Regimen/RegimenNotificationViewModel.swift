@@ -59,15 +59,15 @@ final class RegimenNotificationViewModel {
             let count = try await scheduler.replace(events: events)
             guard isCurrent() else { return }
             scheduledCount = count
-            if regimen == nil { message = "Save a regimen to schedule injection reminders." }
+            if regimen == nil { message = "Save a regimen to schedule dose reminders." }
             else if events.isEmpty { message = "No upcoming reminders in the next 90 days. The selected advance time may already have passed." }
-            else if count < events.count { message = "The nearest \(count) reminders are scheduled. Open fembie regularly to schedule later injections." }
+            else if count < events.count { message = "The nearest \(count) reminders are scheduled. Open fembie regularly to schedule later doses." }
         } catch {
             guard isCurrent() else { return }
             _ = try? await scheduler.replace(events: [])
             guard isCurrent() else { return }
             scheduledCount = 0
-            message = "Could not schedule injection reminders: \(error.localizedDescription)"
+            message = "Could not schedule dose reminders: \(error.localizedDescription)"
         }
     }
 }

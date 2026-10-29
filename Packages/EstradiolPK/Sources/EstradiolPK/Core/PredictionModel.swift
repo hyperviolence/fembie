@@ -2,6 +2,8 @@ import Foundation
 
 public struct DoseAdministration: Sendable {
     public let timestamp: Date
+    /// Injection models use mg of ester; gel uses mg of active estradiol applied.
+    /// The legacy name is retained for source compatibility.
     public let milligramsOfEster: Double
 
     public init(timestamp: Date, milligramsOfEster: Double) {

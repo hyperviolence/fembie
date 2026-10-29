@@ -6,7 +6,7 @@ struct RegimenNotificationSection: View {
     var body: some View {
         @Bindable var model = model
         Section {
-            Toggle("Remind me before an injection", isOn: $model.preferences.enabled)
+            Toggle("Remind me before a dose", isOn: $model.preferences.enabled)
             if model.preferences.enabled {
                 Picker("Reminder time", selection: $model.preferences.leadTime) {
                     ForEach(RegimenNotificationLeadTime.allCases, id: \.self) { leadTime in
@@ -16,7 +16,7 @@ struct RegimenNotificationSection: View {
             }
         } footer: {
             if model.preferences.enabled {
-                Text("Reminders follow upcoming injections over the next 90 days. Open fembie regularly to keep them up to date.")
+                Text("Reminders follow upcoming doses over the next 90 days. Open fembie regularly to keep them up to date.")
             }
             if let message = model.message { Text(message) }
         }

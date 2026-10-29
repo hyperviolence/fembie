@@ -10,8 +10,8 @@ nonisolated enum RegimenValidationError: LocalizedError {
         switch self {
         case .invalidDose: "Enter a finite dose greater than zero."
         case .invalidInterval: "Enter a finite interval greater than zero."
-        case .invalidSchedule: "Check the first injection date and schedule time zone."
-        case .tooManyEvents: "This schedule contains too many injections. Increase the interval or choose a later first injection."
+        case .invalidSchedule: "Check the first dose date and schedule time zone."
+        case .tooManyEvents: "This schedule contains too many doses. Increase the interval or choose a later first dose."
         }
     }
 }

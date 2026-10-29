@@ -16,19 +16,19 @@ struct RegimenView: View {
                     }
                 }
                 RegimenSummarySection(regimen: model.savedRegimen, title: model.regimenTitle)
-                Section("Injection events") {
+                Section("Dose events") {
                     if model.hasMorePast {
-                        Button("Show more past injections…", action: model.showMorePast)
+                        Button("Show more past doses…", action: model.showMorePast)
                     }
                     ForEach(model.visibleEvents) { event in
                         InjectionEventRow(model: model, event: event)
                     }
                     if model.visibleEvents.isEmpty {
-                        ContentUnavailableView("No scheduled injections", systemImage: "calendar",
-                                               description: Text("Save a regimen to generate your injection schedule."))
+                        ContentUnavailableView("No scheduled doses", systemImage: "calendar",
+                                               description: Text("Save a regimen to generate your dose schedule."))
                     }
                     if model.hasMoreFuture {
-                        Button("Show more future injections…") { Task { await model.showMoreFuture() } }
+                        Button("Show more future doses…") { Task { await model.showMoreFuture() } }
                     }
                 }
                 RegimenFormSection(model: model)

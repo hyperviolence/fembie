@@ -54,6 +54,6 @@ struct InjectionEventRow: View {
             .buttonStyle(.bordered)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Injection \(event.scheduledAt.formatted(date: .abbreviated, time: .shortened)), \(status.title)")
+        .accessibilityLabel("Dose \(event.scheduledAt.formatted(date: .abbreviated, time: .shortened)), \(status.title)")
     }
 }
