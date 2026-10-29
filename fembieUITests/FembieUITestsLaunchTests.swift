@@ -1,13 +1,13 @@
 //
-//  FemmeTrackUITestsLaunchTests.swift
-//  FemmeTrackUITests
+//  FembieUITestsLaunchTests.swift
+//  FembieUITests
 //
 //  Created by Eva Xeon on 02.10.26.
 //
 
 import XCTest
 
-final class FemmeTrackUITestsLaunchTests: XCTestCase {
+final class FembieUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

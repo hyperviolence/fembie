@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct FemmeTrackApp: App {
+struct FembieApp: App {
     @State private var regimenModel: RegimenViewModel
     @State private var checkInModel: CheckInViewModel
     @State private var labResultsModel: LabResultsViewModel

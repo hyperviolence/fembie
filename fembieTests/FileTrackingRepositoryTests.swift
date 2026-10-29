@@ -4,7 +4,7 @@ import Testing
 
 struct FileTrackingRepositoryTests {
     private func directory() -> URL {
-        URL.temporaryDirectory.appending(path: "FemmeTrackTests-\(UUID())", directoryHint: .isDirectory)
+        URL.temporaryDirectory.appending(path: "FembieTests-\(UUID())", directoryHint: .isDirectory)
     }
     private func regimen(dose: Double) throws -> Regimen {
         try Regimen(id: UUID(), ester: "EEn", doseMilligramsOfEster: dose, route: .intramuscular, intervalHours: 168,

@@ -1,13 +1,13 @@
 //
-//  FemmeTrackUITests.swift
-//  FemmeTrackUITests
+//  FembieUITests.swift
+//  FembieUITests
 //
 //  Created by Eva Xeon on 02.10.26.
 //
 
 import XCTest
 
-final class FemmeTrackUITests: XCTestCase {
+final class FembieUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
