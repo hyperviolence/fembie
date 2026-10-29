@@ -57,7 +57,8 @@ final class LevelsNotificationViewModel {
                 scheduledCount = 0
                 return
             }
-            guard let regimen = input.regimen, LevelsPredictionCalculator.model(for: regimen) != nil else {
+            guard !input.regimens.isEmpty,
+                  input.regimens.allSatisfy({ LevelsPredictionCalculator.model(for: $0) != nil }) else {
                 _ = try await scheduler.replace(events: [])
                 guard isCurrent() else { return }
                 scheduledCount = 0
@@ -72,10 +73,10 @@ final class LevelsNotificationViewModel {
             }
             let points: [EstradiolPK.PredictionPoint]
             do {
-                points = try await calculator.predict(regimen: regimen, now: now,
+                points = try await calculator.predict(regimens: input.regimens, now: now,
                     calibrationResult: input.calibrationResult, alignSamplesToHour: true, horizon: .notifications)
             } catch LevelsPredictionError.invalidCalibration {
-                points = try await calculator.predict(regimen: regimen, now: now, calibrationResult: nil, alignSamplesToHour: true, horizon: .notifications)
+                points = try await calculator.predict(regimens: input.regimens, now: now, calibrationResult: nil, alignSamplesToHour: true, horizon: .notifications)
             }
             guard isCurrent() else { return }
             let events = LevelEventDetector().events(in: points, kinds: selected.kinds, after: now)

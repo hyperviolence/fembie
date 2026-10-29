@@ -176,4 +176,21 @@ struct LevelsPredictionCalculatorTests {
         edited.route = .subcutaneous
         #expect(LevelsPredictionInput(regimen: original) != LevelsPredictionInput(regimen: edited))
     }
+
+    @Test func overlappingRegimensSumIndependentContributions() async throws {
+        let intramuscular = try regimen()
+        var transdermal = try Regimen(id: UUID(), ester: EstradiolType.estradiolEnanthate.displayName,
+            doseMilligramsOfEster: 2, route: .intramuscular, intervalHours: 4 * 24,
+            effectiveFrom: start, effectiveUntil: start.addingTimeInterval(14 * 86_400),
+            timeZoneIdentifier: "UTC")
+        transdermal = try InjectionSchedule().extending(transdermal,
+            through: start.addingTimeInterval(14 * 86_400))
+        let now = start.addingTimeInterval(7 * 86_400)
+        let calculator = LevelsPredictionCalculator()
+        let combined = try await calculator.predict(regimens: [intramuscular, transdermal], now: now,
+            calibrationResult: nil, alignSamplesToHour: false, horizon: .chart)
+        let combinedNow = try #require(combined.first { $0.timestamp == now })
+        #expect(combinedNow.estradiolPicogramsPerMilliliter > 0)
+        #expect(combined.contains { $0.timestamp > now })
+    }
 }

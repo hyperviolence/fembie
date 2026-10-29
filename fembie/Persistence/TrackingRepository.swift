@@ -6,11 +6,12 @@ nonisolated protocol TrackingRepository: Sendable {
     func injectionEvents() async throws -> [InjectionEvent]
     func checkIns() async throws -> [CheckIn]
     func labResults() async throws -> [LabResult]
-    /// Replaces the saved regimen, including its injection events.
+    /// Inserts or updates one regimen, including its injection events.
     func save(_ regimen: Regimen) async throws
     func save(_ event: InjectionEvent) async throws
     func save(_ checkIn: CheckIn) async throws
     func save(_ result: LabResult) async throws
+    func deleteRegimen(id: UUID) async throws
     func replaceTrackingData(regimens: [Regimen], injectionEvents: [InjectionEvent], checkIns: [CheckIn]) async throws
     func resetRegimenData() async throws
     func resetWellbeingData() async throws

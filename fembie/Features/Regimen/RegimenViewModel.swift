@@ -6,9 +6,7 @@ import Observation
 final class RegimenViewModel {
     var selectedEster: EstradiolType = .estradiolEnanthate {
         didSet {
-            if let route = EsterRoutes.getRoutes(ester: selectedEster).first {
-                selectedRoute = route
-            }
+            if let route = EsterRoutes.getRoutes(ester: selectedEster).first { selectedRoute = route }
         }
     }
     var selectedRoute: EstradiolRoute = .intramuscular
@@ -24,10 +22,13 @@ final class RegimenViewModel {
         }
     }
     var firstInjection: Date
+    var hasEffectiveUntil = false
+    var effectiveUntil: Date
     var showAlert = false
     private(set) var alertMessage = ""
     private(set) var loadError: String?
-    private(set) var savedRegimen: Regimen?
+    private(set) var regimens: [Regimen] = []
+    private(set) var editingRegimenID: UUID?
     private(set) var isBusy = false
     private(set) var hasLoaded = false
     private(set) var now: Date
@@ -47,41 +48,34 @@ final class RegimenViewModel {
         let now = clock()
         self.now = now
         firstInjection = now
+        effectiveUntil = now.addingTimeInterval(90 * 86_400)
     }
 
+    var activeRegimens: [Regimen] { regimens.filter { $0.isEffective(at: now) } }
+    var savedRegimen: Regimen? {
+        editingRegimenID.flatMap { id in regimens.first { $0.id == id } }
+            ?? activeRegimens.last ?? regimens.last(where: { $0.effectiveFrom <= now }) ?? regimens.first
+    }
+    var isEditing: Bool { editingRegimenID != nil }
     var validationMessage: String? {
         do {
             let draft = try makeDraft()
-            let endDate = schedule.horizon(for: draft, now: now)
-
-            // Check schedule validity; the count itself isn't needed here.
-            _ = try schedule.eventCount(for: draft, through: endDate)
+            _ = try schedule.eventCount(for: draft, through: schedule.horizon(for: draft, now: now))
             return nil
         } catch { return error.localizedDescription }
     }
-
-    var canSave: Bool { !isBusy }
+    var canSave: Bool { !isBusy && validationMessage == nil }
     var visibleEvents: [InjectionEvent] {
-        guard let savedRegimen else { return [] }
-        let past = savedRegimen.injectionEvents.filter { $0.scheduledAt <= now }
-        let future = savedRegimen.injectionEvents.filter { $0.scheduledAt > now }
+        let events = regimens.flatMap(\.injectionEvents).sorted { $0.scheduledAt < $1.scheduledAt }
+        let past = events.filter { $0.scheduledAt <= now }
+        let future = events.filter { $0.scheduledAt > now }
         return Array(past.suffix(pastCount)) + Array(future.prefix(futureCount))
     }
     var hasMorePast: Bool {
-        (savedRegimen?.injectionEvents.filter { $0.scheduledAt <= now }.count ?? 0) > pastCount
+        regimens.flatMap(\.injectionEvents).filter { $0.scheduledAt <= now }.count > pastCount
     }
     var hasMoreFuture: Bool {
-        guard let regimen = savedRegimen else { return false }
-        let future = regimen.injectionEvents.filter { $0.scheduledAt > now }
-        if future.count > futureCount { return true }
-        guard regimen.injectionEvents.count < InjectionSchedule.maximumEventCount,
-              let last = regimen.injectionEvents.last else { return false }
-        let intervalSeconds = regimen.intervalHours * 3600
-        let nextInjection = last.scheduledAt.addingTimeInterval(intervalSeconds)
-        if let until = regimen.effectiveUntil {
-            return nextInjection < until
-        }
-        return true
+        regimens.flatMap(\.injectionEvents).filter { $0.scheduledAt > now }.count > futureCount
     }
     var regimenTitle: String {
         guard let savedRegimen else { return "Saved regimen" }
@@ -98,150 +92,172 @@ final class RegimenViewModel {
         defer { isBusy = false }
         refreshTime()
         do {
-            if let saved = try await repository.regimens().first {
-                let repaired = RegimenScheduleRepair.restoringScheduledDates(in: saved)
-                let input = repaired ?? saved
-                let extended = try schedule.extending(input, through: schedule.horizon(for: input, now: now))
-                if repaired != nil || extended.injectionEvents.count != saved.injectionEvents.count {
+            var loaded: [Regimen] = []
+            for saved in try await repository.regimens() {
+                let repair = RegimenScheduleRepair.restoringScheduledDates(in: saved)
+                let repaired = repair ?? saved
+                let extended = try schedule.extending(repaired, through: schedule.horizon(for: repaired, now: now))
+                if repair != nil || extended.injectionEvents.count != saved.injectionEvents.count {
                     try await repository.save(extended)
                 }
-                savedRegimen = extended
-            } else {
-                savedRegimen = nil
+                loaded.append(extended)
             }
+            regimens = loaded.sorted { $0.effectiveFrom < $1.effectiveFrom }
             loadError = nil
             hasLoaded = true
         } catch {
-            loadError = "Could not load your regimen: \(error.localizedDescription)"
-            // Preserve displayed data; the form can still save a replacement.
+            loadError = "Could not load your regimens: \(error.localizedDescription)"
             hasLoaded = false
         }
     }
 
-    func resetData() async throws {
-        guard !isBusy else {
-            throw NSError(domain: "RegimenViewModel", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Your regimen is still being updated. Please try again."])
-        }
-        isBusy = true
-        defer { isBusy = false }
-        try await repository.resetRegimenData()
-        savedRegimen = nil
+    func beginAddingRegimen() {
+        editingRegimenID = nil
         selectedEster = .estradiolEnanthate
         selectedRoute = .intramuscular
         dose = ""
         interval = ""
         intervalUnit = .days
-        refreshTime()
         firstInjection = now
+        hasEffectiveUntil = false
+        effectiveUntil = now.addingTimeInterval(90 * 86_400)
+    }
+
+    func beginEditing(_ regimen: Regimen) {
+        editingRegimenID = regimen.id
+        selectedEster = EstradiolType.allCases.first { $0.displayName == regimen.ester } ?? .estradiolEnanthate
+        selectedRoute = regimen.route
+        dose = regimen.doseMilligramsOfEster.formatted(.number.locale(locale).grouping(.never))
+        intervalUnit = .days
+        interval = (regimen.intervalHours / 24).formatted(.number.locale(locale).grouping(.never)
+            .precision(.significantDigits(1...15)))
+        firstInjection = regimen.effectiveFrom
+        hasEffectiveUntil = regimen.effectiveUntil != nil
+        effectiveUntil = regimen.effectiveUntil ?? regimen.effectiveFrom.addingTimeInterval(90 * 86_400)
+    }
+
+    func resetData() async throws {
+        guard !isBusy else { throw CocoaError(.fileWriteUnknown) }
+        isBusy = true
+        defer { isBusy = false }
+        try await repository.resetRegimenData()
+        regimens = []
+        beginAddingRegimen()
         pastCount = 2
         futureCount = 1
         loadError = nil
         hasLoaded = true
-        showAlert = false
-        alertMessage = ""
     }
 
-    func saveRegimen() async {
-        guard !isBusy else { return }
+    @discardableResult
+    func saveRegimen() async -> Bool {
+        guard !isBusy else { return false }
         isBusy = true
         defer { isBusy = false }
         refreshTime()
         do {
+            let wasEditing = isEditing
             let draft = try makeDraft()
             let regimen = try schedule.extending(draft, through: schedule.horizon(for: draft, now: now))
             try await repository.save(regimen)
-            savedRegimen = regimen
+            if let index = regimens.firstIndex(where: { $0.id == regimen.id }) { regimens[index] = regimen }
+            else { regimens.append(regimen) }
+            regimens.sort { $0.effectiveFrom < $1.effectiveFrom }
+            editingRegimenID = regimen.id
             loadError = nil
             hasLoaded = true
-            pastCount = 2
-            futureCount = 1
-            present("Regimen saved successfully.")
+            present(wasEditing ? "Regimen updated successfully." : "Regimen added successfully.")
+            return true
         } catch {
             present("Could not save regimen: \(error.localizedDescription)")
+            return false
         }
     }
 
     func setAdjustment(eventID: UUID, to adjustment: InjectionAdjustment) async {
-        guard hasLoaded, !isBusy, var regimen = savedRegimen,
-              let index = regimen.injectionEvents.firstIndex(where: { $0.id == eventID }) else { return }
+        guard hasLoaded, !isBusy,
+              let regimenIndex = regimens.firstIndex(where: { $0.injectionEvents.contains { $0.id == eventID } }),
+              let eventIndex = regimens[regimenIndex].injectionEvents.firstIndex(where: { $0.id == eventID }) else { return }
         refreshTime()
-        let event = regimen.injectionEvents[index]
-        let effectiveTime: Date = if case .moved(let actualAt) = event.adjustment {
-            actualAt
-        } else {
-            event.scheduledAt
-        }
+        let event = regimens[regimenIndex].injectionEvents[eventIndex]
         let resolved: InjectionAdjustment
         if adjustment == .confirmed {
-            if case .moved(let actualAt) = event.adjustment, actualAt <= now {
-                resolved = event.adjustment
-            } else if effectiveTime > now {
-                resolved = .moved(actualAt: now)
-            } else {
-                resolved = .confirmed
-            }
-        } else {
-            resolved = adjustment
-        }
+            if case .moved(let actualAt) = event.adjustment, actualAt <= now { resolved = event.adjustment }
+            else if event.scheduledAt > now { resolved = .moved(actualAt: now) }
+            else { resolved = .confirmed }
+        } else { resolved = adjustment }
         guard event.adjustment != resolved else { return }
+        var updated = regimens[regimenIndex]
+        updated.injectionEvents[eventIndex].adjustment = resolved
         isBusy = true
         defer { isBusy = false }
-        // Keep the recurrence date immutable; prediction reads the actual time from .moved.
-        regimen.injectionEvents[index].adjustment = resolved
         do {
-            try await repository.save(regimen)
-            savedRegimen = regimen
+            try await repository.save(updated)
+            regimens[regimenIndex] = updated
+        } catch { present("Could not save dose change: \(error.localizedDescription). Your previous status is unchanged.") }
+    }
+
+    func deleteRegimen(_ regimen: Regimen) async {
+        guard !isBusy, regimens.contains(where: { $0.id == regimen.id }) else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            try await repository.deleteRegimen(id: regimen.id)
+            regimens.removeAll { $0.id == regimen.id }
+            if editingRegimenID == regimen.id { beginAddingRegimen() }
+            present("Regimen deleted.")
         } catch {
-            present("Could not save dose change: \(error.localizedDescription). Your previous status is unchanged.")
+            present("Could not delete regimen: \(error.localizedDescription)")
         }
     }
 
     func showMorePast() { pastCount += 3 }
-
     func showMoreFuture() async {
-        guard hasLoaded, !isBusy, let regimen = savedRegimen else { return }
-        let available = regimen.injectionEvents.filter { $0.scheduledAt > now }.count
-        if available > futureCount || !hasMoreFuture {
+        guard !isBusy, let regimen = savedRegimen else { return }
+        let available = regimens.flatMap(\.injectionEvents).filter { $0.scheduledAt > now }.count
+        if available > futureCount {
             futureCount += 3
             return
         }
-        guard let last = regimen.injectionEvents.last else { return }
+        guard let last = regimen.injectionEvents.last,
+              regimen.injectionEvents.count < InjectionSchedule.maximumEventCount else { return }
         isBusy = true
         defer { isBusy = false }
         do {
-            let remainingCapacity = InjectionSchedule.maximumEventCount - regimen.injectionEvents.count
-            let extraCount = min(3, remainingCapacity)
-            let intervalSeconds = regimen.intervalHours * 3600
-            let elapsedSeconds = last.scheduledAt.timeIntervalSince(regimen.effectiveFrom)
-            let lastIndex = (elapsedSeconds / intervalSeconds).rounded()
-            let nextIndex = lastIndex + Double(extraCount)
-            let hoursFromFirstInjection = nextIndex * regimen.intervalHours
-            let secondsFromFirstInjection = hoursFromFirstInjection * 3600
-            let endDate = regimen.effectiveFrom.addingTimeInterval(secondsFromFirstInjection)
-            let extended = try schedule.extending(regimen, through: endDate)
+            let extraCount = min(3, InjectionSchedule.maximumEventCount - regimen.injectionEvents.count)
+            let end = last.scheduledAt.addingTimeInterval(Double(extraCount) * regimen.intervalHours * 3_600)
+            let extended = try schedule.extending(regimen, through: end)
             try await repository.save(extended)
-            savedRegimen = extended
+            if let index = regimens.firstIndex(where: { $0.id == extended.id }) { regimens[index] = extended }
             futureCount += 3
         } catch { present("Could not extend the schedule: \(error.localizedDescription)") }
     }
 
     private func makeDraft() throws -> Regimen {
-        guard let dose = parseNumber(dose) else {
-            throw RegimenValidationError.invalidDose
+        guard let dose = parseNumber(dose) else { throw RegimenValidationError.invalidDose }
+        guard let intervalValue = parseNumber(interval) else { throw RegimenValidationError.invalidInterval }
+        let id = editingRegimenID ?? UUID()
+        var draft = try Regimen(id: id, ester: selectedEster.displayName, doseMilligramsOfEster: dose,
+            route: selectedRoute, intervalHours: intervalValue * Double(intervalUnit.rawValue),
+            effectiveFrom: firstInjection, effectiveUntil: hasEffectiveUntil ? effectiveUntil : nil,
+            timeZoneIdentifier: TimeZone.current.identifier)
+        if let existing = regimens.first(where: { $0.id == id }),
+           existing.effectiveFrom == draft.effectiveFrom, existing.intervalHours == draft.intervalHours {
+            draft.injectionEvents = existing.injectionEvents.filter { event in
+                draft.effectiveUntil.map { event.scheduledAt < $0 } ?? true
+            }.map { event in
+                var updated = InjectionEvent(id: event.id, regimenID: event.regimenID,
+                    scheduledAt: event.scheduledAt, doseMilligramsOfEster: dose)
+                updated.adjustment = event.adjustment
+                return updated
+            }
         }
-        guard let intervalValue = parseNumber(interval) else {
-            throw RegimenValidationError.invalidInterval
-        }
-        return try Regimen(id: UUID(), ester: selectedEster.displayName, doseMilligramsOfEster: dose, route: selectedRoute, 
-                           intervalHours: intervalValue * Double(intervalUnit.rawValue), effectiveFrom: firstInjection,
-                           effectiveUntil: nil, timeZoneIdentifier: TimeZone.current.identifier)
+        return draft
     }
 
     private func parseNumber(_ input: String) -> Double? {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         let separator = locale.decimalSeparator ?? "."
-        // Require the entire input to be a decimal number; reject grouping and trailing text.
         let parts = text.components(separatedBy: separator)
         guard parts.count <= 2, parts.contains(where: { !$0.isEmpty }),
               parts.allSatisfy({ $0.allSatisfy { $0.isASCII && $0.isNumber } }) else { return nil }

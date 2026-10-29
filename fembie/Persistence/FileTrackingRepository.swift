@@ -97,9 +97,31 @@ actor FileTrackingRepository: TrackingRepository {
 
     func save(_ regimen: Regimen) throws {
         try regimen.validate()
-        let values = [regimen]
+        // A valid save can also recover a store whose previous JSON is corrupt.
+        var values = (try? regimens()) ?? []
+        upsert(&values, item: regimen)
+        values.sort { $0.effectiveFrom < $1.effectiveFrom }
         try persist(values, to: .regimens)
         regimensCache = values
+    }
+
+    func deleteRegimen(id: UUID) throws {
+        var savedRegimens = try regimens()
+        guard savedRegimens.contains(where: { $0.id == id }) else { return }
+        let previousRegimens = savedRegimens
+        let previousEvents = try injectionEvents()
+        savedRegimens.removeAll { $0.id == id }
+        let remainingEvents = previousEvents.filter { $0.regimenID != id }
+        do {
+            try persist(savedRegimens, to: .regimens)
+            try persist(remainingEvents, to: .injectionEvents)
+        } catch {
+            try? persist(previousRegimens, to: .regimens)
+            try? persist(previousEvents, to: .injectionEvents)
+            throw error
+        }
+        regimensCache = savedRegimens
+        injectionEventsCache = remainingEvents
     }
 
     func save(_ event: InjectionEvent) throws {

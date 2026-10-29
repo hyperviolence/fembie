@@ -28,7 +28,7 @@ nonisolated struct DataImportValidator: Sendable {
     static let maximumFileSize = 10 * 1_024 * 1_024
     static let maximumRecordsPerCollection = 10_000
     private static let rootKeys: Set<String> = [
-        "formatVersion", "appVersion", "regimens", "injectionEvents", "checkIns"
+        "formatVersion", "appVersion", "regimen", "regimens", "injectionEvents", "checkIns"
     ]
     private static let regimenKeys: Set<String> = [
         "id", "ester", "doseMilligramsOfEster", "route", "intervalHours", "effectiveFrom",
@@ -49,6 +49,9 @@ nonisolated struct DataImportValidator: Sendable {
         }
         guard let root = object as? [String: Any] else { throw DataImportError.invalidJSON }
         try rejectUnknownKeys(in: root, allowed: Self.rootKeys)
+        guard !(root.keys.contains("regimen") && root.keys.contains("regimens")) else {
+            throw DataImportError.invalidJSON
+        }
 
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -73,8 +76,17 @@ nonisolated struct DataImportValidator: Sendable {
     }
 
     private func validateObjectArrays(_ root: [String: Any]) throws {
-        guard let regimens = root["regimens"] as? [[String: Any]],
-              let events = root["injectionEvents"] as? [[String: Any]],
+        let regimens: [[String: Any]]
+        if let current = root["regimens"] as? [[String: Any]] {
+            regimens = current
+        } else if let legacy = root["regimen"] as? [String: Any] {
+            regimens = [legacy]
+        } else if root["regimen"] is NSNull {
+            regimens = []
+        } else {
+            throw DataImportError.invalidJSON
+        }
+        guard let events = root["injectionEvents"] as? [[String: Any]],
               let checkIns = root["checkIns"] as? [[String: Any]] else {
             throw DataImportError.invalidJSON
         }

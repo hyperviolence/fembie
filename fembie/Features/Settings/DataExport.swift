@@ -21,16 +21,32 @@ nonisolated struct DataExport: Codable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case formatVersion, appVersion, regimens, injectionEvents, checkIns
+        case formatVersion, appVersion, regimen, regimens, injectionEvents, checkIns
     }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         formatVersion = try container.decodeIfPresent(Int.self, forKey: .formatVersion) ?? 1
         appVersion = try container.decodeIfPresent(String.self, forKey: .appVersion)
-        regimens = try container.decode([Regimen].self, forKey: .regimens)
+        if container.contains(.regimens) {
+            regimens = try container.decode([Regimen].self, forKey: .regimens)
+        } else if let regimen = try container.decodeIfPresent(Regimen.self, forKey: .regimen) {
+            // Early version 1 exports stored the only regimen as a single object.
+            regimens = [regimen]
+        } else {
+            regimens = []
+        }
         injectionEvents = try container.decode([InjectionEvent].self, forKey: .injectionEvents)
         checkIns = try container.decode([CheckIn].self, forKey: .checkIns)
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(formatVersion, forKey: .formatVersion)
+        try container.encodeIfPresent(appVersion, forKey: .appVersion)
+        try container.encode(regimens, forKey: .regimens)
+        try container.encode(injectionEvents, forKey: .injectionEvents)
+        try container.encode(checkIns, forKey: .checkIns)
     }
 }
 

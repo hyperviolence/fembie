@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RegimenFormSection: View {
     @Bindable var model: RegimenViewModel
+    let onSaved: () -> Void
     private let enabledTypes: Set<EstradiolType> = [.estradiolEnanthate, .estradiolGel]
     private let enabledRoutes: Set<EstradiolRoute> = [.intramuscular, .subcutaneous, .transdermal]
 
@@ -32,13 +33,21 @@ struct RegimenFormSection: View {
             .pickerStyle(.segmented)
             TextField(model.intervalUnit.fieldLabel, text: $model.interval).keyboardType(.decimalPad)
             DatePicker("First dose", selection: $model.firstInjection)
-            Button("Save regimen") { Task { await model.saveRegimen() } }
+            Toggle("Effective until", isOn: $model.hasEffectiveUntil)
+            if model.hasEffectiveUntil {
+                DatePicker("End date", selection: $model.effectiveUntil, in: model.firstInjection...)
+            }
+            Button(model.isEditing ? "Update regimen" : "Add regimen") {
+                Task {
+                    if await model.saveRegimen() { onSaved() }
+                }
+            }
                 .disabled(!model.canSave)
         } header: {
-            Text("Estradiol regimen")
+            Text(model.isEditing ? "Edit regimen" : "New regimen")
         } footer: {
             if let message = model.validationMessage { Text(message) }
-            else { Text("Saving replaces your previous regimen and its dose history.") }
+            else { Text("Date ranges may overlap. Each regimen keeps its own dose schedule and adjustments.") }
         }
         .disabled(model.isBusy)
     }

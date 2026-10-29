@@ -85,18 +85,23 @@ struct FileTrackingRepositoryTests {
         #expect(try await FileTrackingRepository(baseURL: url).labResults() == [valid])
     }
 
-    @Test func missingStoreIsEmptyAndSaveReplacesPreviousRegimen() async throws {
+    @Test func missingStoreIsEmptyAndSaveUpsertsRegimens() async throws {
         let url = directory()
         defer { try? FileManager.default.removeItem(at: url) }
         let repository = FileTrackingRepository(baseURL: url)
         #expect(try await repository.regimens().isEmpty)
         let first = try regimen(dose: 2)
-        let replacement = try regimen(dose: 3)
+        var replacement = try regimen(dose: 3)
         try await repository.save(first)
         try await repository.save(replacement)
         let loaded = try await FileTrackingRepository(baseURL: url).regimens()
-        #expect(loaded.count == 1)
-        #expect(loaded.first?.id == replacement.id)
+        #expect(loaded.count == 2)
+        #expect(Set(loaded.map(\.id)) == Set([first.id, replacement.id]))
+        replacement.doseMilligramsOfEster = 4
+        try await repository.save(replacement)
+        let updated = try await FileTrackingRepository(baseURL: url).regimens()
+        #expect(updated.count == 2)
+        #expect(updated.first { $0.id == replacement.id }?.doseMilligramsOfEster == 4)
     }
 
     @Test func fractionalDatesAndCorrectionsSurviveSaveReloadAndExtension() async throws {
@@ -115,6 +120,30 @@ struct FileTrackingRepositoryTests {
         let extended = try schedule.extending(reloaded, through: reloaded.effectiveFrom.addingTimeInterval(5 * 86400))
         #expect(extended.injectionEvents[1].id == value.injectionEvents[1].id)
         #expect(extended.injectionEvents[1].adjustment == .skipped)
+    }
+
+    @Test func deletingRegimenRemovesOnlyItsRelatedData() async throws {
+        let url = directory()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let repository = FileTrackingRepository(baseURL: url)
+        let deleted = try regimen(dose: 2)
+        let retained = try regimen(dose: 3)
+        let deletedEvent = InjectionEvent(id: UUID(), regimenID: deleted.id,
+            scheduledAt: deleted.effectiveFrom, doseMilligramsOfEster: 2)
+        let retainedEvent = InjectionEvent(id: UUID(), regimenID: retained.id,
+            scheduledAt: retained.effectiveFrom, doseMilligramsOfEster: 3)
+        try await repository.save(deleted)
+        try await repository.save(retained)
+        try await repository.save(deletedEvent)
+        try await repository.save(retainedEvent)
+
+        try await repository.deleteRegimen(id: deleted.id)
+
+        #expect(try await repository.regimens().map(\.id) == [retained.id])
+        #expect(try await repository.injectionEvents().map(\.id) == [retainedEvent.id])
+        let reloaded = FileTrackingRepository(baseURL: url)
+        #expect(try await reloaded.regimens().map(\.id) == [retained.id])
+        #expect(try await reloaded.injectionEvents().map(\.id) == [retainedEvent.id])
     }
 
     @Test func corruptStoreCanBeOverwrittenWithNewRegimen() async throws {

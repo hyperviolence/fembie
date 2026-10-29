@@ -77,20 +77,32 @@ struct RegimenViewModelTests {
         #expect(model.savedRegimen?.id == savedID)
     }
 
-    @Test func futureRegimenRemainsVisibleAfterReloadAndOverwrite() async throws {
+    @Test func overlappingRegimensCanBeAddedReloadedAndEdited() async throws {
         let repository = TestTrackingRepository()
         let model = model(repository: repository)
         await model.load()
         await model.saveRegimen()
         let originalID = model.savedRegimen?.id
+        model.beginAddingRegimen()
+        model.dose = "3"
+        model.interval = "1"
         model.firstInjection = now.addingTimeInterval(86400)
+        model.hasEffectiveUntil = true
+        model.effectiveUntil = now.addingTimeInterval(10 * 86400)
         await model.saveRegimen()
         let replacementID = model.savedRegimen?.id
         #expect(replacementID != originalID)
         await model.load()
         #expect(model.savedRegimen?.id == replacementID)
         #expect(model.regimenTitle == "Upcoming regimen")
-        #expect(try await repository.regimens().count == 1)
+        #expect(try await repository.regimens().count == 2)
+        let original = try #require(model.regimens.first { $0.id == originalID })
+        model.beginEditing(original)
+        model.hasEffectiveUntil = true
+        model.effectiveUntil = now.addingTimeInterval(5 * 86400)
+        await model.saveRegimen()
+        #expect(model.regimens.count == 2)
+        #expect(model.regimens.first { $0.id == originalID }?.effectiveUntil == model.effectiveUntil)
     }
 
     @Test func failedAdjustmentPreservesStatusAndRetryWorks() async throws {
@@ -108,6 +120,24 @@ struct RegimenViewModelTests {
         #expect(model.savedRegimen?.injectionEvents.first?.adjustment == .skipped)
         await model.setAdjustment(eventID: event.id, to: .none)
         #expect(model.savedRegimen?.injectionEvents.first?.adjustment == InjectionAdjustment.none)
+    }
+
+    @Test func deletionUpdatesListAndFailedDeletionPreservesIt() async throws {
+        let repository = TestTrackingRepository()
+        let model = model(repository: repository)
+        await model.load()
+        await model.saveRegimen()
+        let regimen = try #require(model.savedRegimen)
+
+        await repository.configure(failWrites: true)
+        await model.deleteRegimen(regimen)
+        #expect(model.regimens.map(\.id) == [regimen.id])
+        #expect(model.showAlert)
+
+        await repository.configure()
+        await model.deleteRegimen(regimen)
+        #expect(model.regimens.isEmpty)
+        #expect(try await repository.regimens().isEmpty)
     }
 
     @Test func failedReplacementPreservesPreviousRegimen() async throws {

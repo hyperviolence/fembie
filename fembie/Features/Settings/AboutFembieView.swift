@@ -6,7 +6,8 @@ struct AboutFembieView: View {
             Text("""
                 fembie
                 Copyright (c) 2026 fembie contributors,
-                App icon artwork (c) Sogga (mmryrbt@gmail.com), all rights reserved.
+                
+                App icon artwork by Sogga (mmryrbt@gmail.com), all rights reserved.
 
                 fembie is an open source estradiol level-tracking app for transfemme individuals that uses an approximation model based on available scientific research to estimate the user's current estradiol levels and see how the speed-of-change and the levels themselves correlate with the user's wellbeing.
 

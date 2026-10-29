@@ -3,6 +3,7 @@ import SwiftUI
 struct RegimenView: View {
     @Environment(RegimenViewModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
+    @State private var isPresentingEditor = false
 
     var body: some View {
         @Bindable var model = model
@@ -15,7 +16,13 @@ struct RegimenView: View {
                             .disabled(model.isBusy)
                     }
                 }
-                RegimenSummarySection(regimen: model.savedRegimen, title: model.regimenTitle)
+                RegimenListSection(model: model) {
+                    model.beginAddingRegimen()
+                    isPresentingEditor = true
+                } onEdit: { regimen in
+                    model.beginEditing(regimen)
+                    isPresentingEditor = true
+                }
                 Section("Dose events") {
                     if model.hasMorePast {
                         Button("Show more past doses…", action: model.showMorePast)
@@ -31,7 +38,6 @@ struct RegimenView: View {
                         Button("Show more future doses…") { Task { await model.showMoreFuture() } }
                     }
                 }
-                RegimenFormSection(model: model)
                 RegimenNotificationSection()
             }
             .navigationTitle("Regimen")
@@ -49,6 +55,21 @@ struct RegimenView: View {
             .alert("Regimen", isPresented: $model.showAlert) {
                 Button("OK", role: .cancel) { }
             } message: { Text(model.alertMessage) }
+            .sheet(isPresented: $isPresentingEditor) {
+                NavigationStack {
+                    Form {
+                        RegimenFormSection(model: model) {
+                            isPresentingEditor = false
+                        }
+                    }
+                    .navigationTitle(model.isEditing ? "Edit regimen" : "New regimen")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { isPresentingEditor = false }
+                        }
+                    }
+                }
+            }
         }
     }
 }

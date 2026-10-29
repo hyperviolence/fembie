@@ -32,20 +32,21 @@ final class LevelsViewModel {
             clearPrediction()
         }
         message = nil
-        guard let regimen = input.regimen else {
+        guard !input.regimens.isEmpty else {
             clearPrediction()
             isLoading = false
             message = "Save a regimen to see estimated levels."
             return
         }
-        guard let predictionModel = LevelsPredictionCalculator.model(for: regimen) else {
+        let predictionModels = input.regimens.compactMap(LevelsPredictionCalculator.model(for:))
+        guard predictionModels.count == input.regimens.count else {
             clearPrediction()
             isLoading = false
             message = LevelsPredictionError.unsupportedRegimen.localizedDescription
             return
         }
-        modelIdentifier = predictionModel.modelIdentifier
-        modelSource = predictionModel.modelSource
+        modelIdentifier = Set(predictionModels.map(\.modelIdentifier)).sorted().formatted(.list(type: .and))
+        modelSource = Set(predictionModels.map(\.modelSource)).sorted().formatted(.list(type: .and))
         defer {
             if revision == requestRevision { isLoading = false }
         }
@@ -53,7 +54,7 @@ final class LevelsViewModel {
             let result: [PredictionPoint]
             let updatedCalibrationMessage: String?
             do {
-                result = try await calculator.predict(regimen: regimen, now: now,
+                result = try await calculator.predict(regimens: input.regimens, now: now,
                                                       calibrationResult: input.calibrationResult,
                                                       alignSamplesToHour: false, horizon: horizon)
                 guard !Task.isCancelled, revision == requestRevision else { return }
@@ -65,7 +66,7 @@ final class LevelsViewModel {
                     updatedCalibrationMessage = nil
                 }
             } catch LevelsPredictionError.invalidCalibration(let reason) {
-                result = try await calculator.predict(regimen: regimen, now: now, calibrationResult: nil,
+                result = try await calculator.predict(regimens: input.regimens, now: now, calibrationResult: nil,
                                                       alignSamplesToHour: false, horizon: horizon)
                 guard !Task.isCancelled, revision == requestRevision else { return }
                 updatedCalibrationMessage = "Calibration not applied: \(reason)"

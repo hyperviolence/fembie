@@ -1,6 +1,6 @@
 import Foundation
 
-/// The saved regimen is replaced in full when the user saves a new one.
+/// One independently scheduled treatment that can overlap other regimens.
 nonisolated struct Regimen: Identifiable, Codable, Sendable {
     let id: UUID
     var ester: String
@@ -48,5 +48,9 @@ nonisolated struct Regimen: Identifiable, Codable, Sendable {
         for event in injectionEvents {
             try event.validate(for: id)
         }
+    }
+
+    func isEffective(at date: Date) -> Bool {
+        effectiveFrom <= date && (effectiveUntil.map { date < $0 } ?? true)
     }
 }

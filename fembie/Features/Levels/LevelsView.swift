@@ -22,7 +22,7 @@ struct LevelsView: View {
                         NavigationLink {
                             LevelsChartDetailView(
                                 input: LevelsPredictionInput(
-                                    regimen: regimenModel.savedRegimen,
+                                    regimens: regimenModel.regimens,
                                     calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
                                     calibrationResult: labResultsModel.useLatestE2ResultForCalibration
                                         ? labResultsModel.latestE2Result : nil
@@ -72,7 +72,7 @@ struct LevelsView: View {
                         NavigationLink {
                             LevelsChartDetailView(
                                 input: LevelsPredictionInput(
-                                    regimen: regimenModel.savedRegimen,
+                                    regimens: regimenModel.regimens,
                                     calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
                                     calibrationResult: labResultsModel.useLatestE2ResultForCalibration
                                         ? labResultsModel.latestE2Result : nil
@@ -110,11 +110,11 @@ struct LevelsView: View {
             if !regimenModel.hasLoaded { await regimenModel.load() }
             await labResultsModel.load()
         }
-        .task(id: LevelsPredictionInput(regimen: regimenModel.savedRegimen,
+        .task(id: LevelsPredictionInput(regimens: regimenModel.regimens,
                                        isActive: scenePhase == .active,
                                        calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
                                        calibrationResult: labResultsModel.useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)) {
-            let input = LevelsPredictionInput(regimen: regimenModel.savedRegimen,
+            let input = LevelsPredictionInput(regimens: regimenModel.regimens,
                                              isActive: scenePhase == .active,
                                        calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
                                        calibrationResult: labResultsModel.useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)

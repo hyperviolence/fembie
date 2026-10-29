@@ -72,11 +72,23 @@ actor TestTrackingRepository: TrackingRepository {
         storedLabResults.removeAll { $0.id == id }
     }
 
+    func deleteRegimen(id: UUID) async throws {
+        if writeDelay != .zero { try await Task.sleep(for: writeDelay) }
+        if failWrites { throw CocoaError(.fileWriteNoPermission) }
+        storedRegimens.removeAll { $0.id == id }
+        storedInjectionEvents.removeAll { $0.regimenID == id }
+    }
+
     func save(_ regimen: Regimen) async throws {
         writes += 1
         if writeDelay != .zero { try await Task.sleep(for: writeDelay) }
         if failWrites { throw CocoaError(.fileWriteNoPermission) }
-        storedRegimens = [regimen]
+        if let index = storedRegimens.firstIndex(where: { $0.id == regimen.id }) {
+            storedRegimens[index] = regimen
+        } else {
+            storedRegimens.append(regimen)
+        }
+        storedRegimens.sort { $0.effectiveFrom < $1.effectiveFrom }
     }
 
     func resetRegimenData() throws {

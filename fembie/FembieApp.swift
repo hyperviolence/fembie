@@ -40,7 +40,7 @@ struct FembieApp: App {
                     await checkInModel.reloadCheckIns()
                 }
                 .task(id: RegimenNotificationInput(
-                    prediction: LevelsPredictionInput(regimen: regimenModel.savedRegimen,
+                    prediction: LevelsPredictionInput(regimens: regimenModel.regimens,
                                                       isActive: scenePhase == .active),
                     preferences: regimenNotifications.preferences)) {
                     guard scenePhase == .active else { return }
@@ -59,7 +59,7 @@ struct FembieApp: App {
                     await checkInReminder.refresh()
                 }
                 .task(id: LevelsNotificationInput(
-                    prediction: LevelsPredictionInput(regimen: regimenModel.savedRegimen,
+                    prediction: LevelsPredictionInput(regimens: regimenModel.regimens,
                         isActive: scenePhase == .active,
                         calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
                         calibrationResult: labResultsModel.useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil),
@@ -68,7 +68,7 @@ struct FembieApp: App {
                     if !regimenModel.hasLoaded { await regimenModel.load() }
                     await labResultsModel.load()
                     guard !Task.isCancelled else { return }
-                    let input = LevelsPredictionInput(regimen: regimenModel.savedRegimen,
+                    let input = LevelsPredictionInput(regimens: regimenModel.regimens,
                         calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,
                         calibrationResult: labResultsModel.useLatestE2ResultForCalibration ? labResultsModel.latestE2Result : nil)
                     while !Task.isCancelled {

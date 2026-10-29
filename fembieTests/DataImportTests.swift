@@ -66,6 +66,46 @@ struct DataImportTests {
         #expect(export.appVersion == nil)
     }
 
+    @Test func acceptsLegacyVersionOneWithSingularRegimen() async throws {
+        let regimen = try regimen()
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let regimenObject = try #require(
+            JSONSerialization.jsonObject(with: encoder.encode(regimen)) as? [String: Any]
+        )
+        let legacyObject: [String: Any] = [
+            "regimen": regimenObject,
+            "injectionEvents": [],
+            "checkIns": []
+        ]
+        let data = try JSONSerialization.data(withJSONObject: legacyObject)
+
+        let export = try DataImportValidator().decodeAndValidate(data)
+
+        #expect(export.formatVersion == 1)
+        #expect(export.regimens.map(\.id) == [regimen.id])
+    }
+
+    @Test func acceptsLegacyVersionOneWithNoRegimen() throws {
+        let legacy = """
+        {"regimen":null,"injectionEvents":[],"checkIns":[]}
+        """.data(using: .utf8) ?? Data()
+
+        let export = try DataImportValidator().decodeAndValidate(legacy)
+
+        #expect(export.regimens.isEmpty)
+    }
+
+    @Test func rejectsAmbiguousSingularAndPluralRegimens() throws {
+        let ambiguous = """
+        {"regimen":null,"regimens":[],"injectionEvents":[],"checkIns":[]}
+        """.data(using: .utf8) ?? Data()
+
+        #expect(throws: DataImportError.invalidJSON) {
+            try DataImportValidator().decodeAndValidate(ambiguous)
+        }
+    }
+
     @Test func rejectsUnknownFields() {
         let data = """
         {"formatVersion":1,"regimens":[],"injectionEvents":[],"checkIns":[],"script":"payload"}
