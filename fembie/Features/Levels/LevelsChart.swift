@@ -15,34 +15,52 @@ struct LevelsChart: View {
     var body: some View {
         VStack(alignment: .leading) {
             Chart {
-                ForEach(points.filter { $0.timestamp <= now }, id: \.timestamp) { point in
-                    LineMark(x: .value("Time", point.timestamp),
-                             y: .value("Value", showsRateOfChange
-                                       ? point.rateOfChangePicogramsPerMilliliterPerHour
-                                       : point.estradiolPicogramsPerMilliliter),
-                             series: .value("Period", "History"))
+                if showsRateOfChange {
+                    LinePlot(
+                        points.filter { $0.timestamp <= now },
+                        x: .value("Time", \.timestamp),
+                        y: .value("Value", \.rateOfChangePicogramsPerMilliliterPerHour)
+                    )
                     .foregroundStyle(.tint)
-                    if point.timestamp == now, selectedPoint == nil {
-                        PointMark(
-                                x: .value("Time", point.timestamp),
-                                y: .value("Value", showsRateOfChange
-                                          ? point.rateOfChangePicogramsPerMilliliterPerHour
-                                          : point.estradiolPicogramsPerMilliliter)
-                            )
-                            .symbol {
-                                PulsingPoint()
-                            }
-                    }
+
+                    LinePlot(
+                        points.filter { $0.timestamp >= now },
+                        x: .value("Time", \.timestamp),
+                        y: .value("Value", \.rateOfChangePicogramsPerMilliliterPerHour)
+                    )
+                    .foregroundStyle(.tint)
+                    .lineStyle(StrokeStyle(dash: [5, 4]))
+                } else {
+                    LinePlot(
+                        points.filter { $0.timestamp <= now },
+                        x: .value("Time", \.timestamp),
+                        y: .value("Value", \.estradiolPicogramsPerMilliliter)
+                    )
+                    .foregroundStyle(.tint)
+
+                    LinePlot(
+                        points.filter { $0.timestamp >= now },
+                        x: .value("Time", \.timestamp),
+                        y: .value("Value", \.estradiolPicogramsPerMilliliter)
+                    )
+                    .foregroundStyle(.tint)
+                    .lineStyle(StrokeStyle(dash: [5, 4]))
                 }
-                
-                ForEach(points.filter { $0.timestamp >= now }, id: \.timestamp) { point in
-                    LineMark(x: .value("Time", point.timestamp),
-                             y: .value("Value", showsRateOfChange
-                                ? point.rateOfChangePicogramsPerMilliliterPerHour
-                                : point.estradiolPicogramsPerMilliliter),
-                             series: .value("Period", "Projection"))
-                        .foregroundStyle(.tint)
-                        .lineStyle(StrokeStyle(dash: [5, 4]))
+
+                if let currentPoint = points.first(where: { $0.timestamp == now }),
+                   selectedPoint == nil {
+                    PointMark(
+                        x: .value("Time", currentPoint.timestamp),
+                        y: .value(
+                            "Value",
+                            showsRateOfChange
+                                ? currentPoint.rateOfChangePicogramsPerMilliliterPerHour
+                                : currentPoint.estradiolPicogramsPerMilliliter
+                        )
+                    )
+                    .symbol {
+                        PulsingPoint()
+                    }
                 }
                 if let selectedPoint {
                     let selectedValue = showsRateOfChange
@@ -57,7 +75,10 @@ struct LevelsChart: View {
                     .symbol {
                         PulsingPoint()
                     }
-                    .annotation(position: .top) {
+                    .annotation(
+                        position: .top,
+                        overflowResolution: .init(x: .fit(to: .chart), y: .disabled)
+                    ) {
                         VStack {
                             Text(selectedPoint.timestamp, format: .dateTime.month().day().year().hour().minute())
                             if showsRateOfChange {
@@ -79,14 +100,18 @@ struct LevelsChart: View {
             .chartOverlay { proxy in
                 if showWellbeing {
                     GeometryReader { geometry in
-                        if let plotAnchor = proxy.plotFrame {
+                        if let plotAnchor = proxy.plotFrame,
+                           let containerAnchor = proxy.plotContainerFrame {
                             let plotFrame = geometry[plotAnchor]
-                            if let start = proxy.value(atX: 0, as: Date.self),
-                               let end = proxy.value(atX: plotFrame.width, as: Date.self),
+                            let containerFrame = geometry[containerAnchor]
+                            let visibleStartX = containerFrame.minX - plotFrame.minX
+                            let visibleEndX = containerFrame.maxX - plotFrame.minX
+                            if let start = proxy.value(atX: visibleStartX, as: Date.self),
+                               let end = proxy.value(atX: visibleEndX, as: Date.self),
                                start < end {
                                 WellbeingOverlayChart(checkIns: wellbeing, dateRange: start...end)
-                                    .frame(width: plotFrame.width, height: plotFrame.height)
-                                    .position(x: plotFrame.midX, y: plotFrame.midY)
+                                    .frame(width: containerFrame.width, height: containerFrame.height)
+                                    .position(x: containerFrame.midX, y: containerFrame.midY)
                                     .allowsHitTesting(false)
                             }
                         }

@@ -6,8 +6,20 @@ struct WellbeingOverlayChart: View {
     let dateRange: ClosedRange<Date>
 
     var body: some View {
-        let visibleCheckIns = checkIns.filter { dateRange.contains($0.recordedAt) }
-            .sorted { $0.recordedAt < $1.recordedAt }
+        let firstVisibleIndex = checkIns.firstIndex {
+            $0.recordedAt >= dateRange.lowerBound
+        } ?? checkIns.endIndex
+        let firstIndexAfterVisibleRange = checkIns.firstIndex {
+            $0.recordedAt > dateRange.upperBound
+        } ?? checkIns.endIndex
+        let extendedStartIndex = firstVisibleIndex > checkIns.startIndex
+            ? checkIns.index(before: firstVisibleIndex)
+            : checkIns.startIndex
+        let extendedEndIndex = firstIndexAfterVisibleRange < checkIns.endIndex
+            ? checkIns.index(after: firstIndexAfterVisibleRange)
+            : checkIns.endIndex
+        let visibleCheckIns = checkIns[extendedStartIndex..<extendedEndIndex]
+
         Canvas { context, size in
             let duration = dateRange.upperBound.timeIntervalSince(dateRange.lowerBound)
             guard duration > 0 else { return }

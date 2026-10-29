@@ -61,10 +61,8 @@ struct LevelsChartDetailView: View {
         .task(id: input) {
             await model.refresh(input: input, now: now, horizon: .detail)
         }
-        .task(id: mapsWellbeing) {
-            if mapsWellbeing {
-                await checkInModel.loadCheckIns()
-            }
+        .task {
+            await checkInModel.loadCheckIns()
         }
         .onChange(of: selectedDate) { _, newValue in
             model.selectPoint(nearestTo: newValue)

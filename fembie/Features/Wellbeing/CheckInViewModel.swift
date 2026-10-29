@@ -11,13 +11,14 @@ final class CheckInViewModel {
     private(set) var checkIns: [CheckIn] = []
     private(set) var historyError: String?
     @ObservationIgnored private let repository: any TrackingRepository
+    @ObservationIgnored private var hasLoadedCheckIns = false
     
     init(repository: any TrackingRepository) {
         self.repository = repository
     }
     
     func loadCheckIns() async {
-        guard !isBusy else { return }
+        guard !isBusy, !hasLoadedCheckIns else { return }
         isBusy = true
         defer { isBusy = false }
         do {
@@ -64,6 +65,7 @@ final class CheckInViewModel {
         defer { isBusy = false }
         try await repository.resetWellbeingData()
         checkIns = []
+        hasLoadedCheckIns = true
         lastSavedCheckInDate = nil
         saveError = nil
         historyError = nil
@@ -84,7 +86,12 @@ final class CheckInViewModel {
     }
 
     private func refreshHistory() async throws {
-        checkIns = try await repository.checkIns().sorted { $0.recordedAt < $1.recordedAt }
+        let loadedCheckIns = try await repository.checkIns()
+        let sortedCheckIns = await Task.detached {
+            loadedCheckIns.sorted { $0.recordedAt < $1.recordedAt }
+        }.value
+        checkIns = sortedCheckIns
+        hasLoadedCheckIns = true
         historyError = nil
     }
 }
