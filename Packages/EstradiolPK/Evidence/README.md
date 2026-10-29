@@ -2,6 +2,7 @@
 
 - [Generic transdermal gel](TransdermalGel.md): original dose-only approximation
   using EstroGel and Divigel prescribing information; not clinically validated.
+- [Valerate intramuscular](ValerateIntramuscular.md): Estrannaise port.
 - [Enanthate intramuscular](EnanthateIntramuscular.md): Estrannaise port.
 - [Enanthate subcutaneous](EnanthateSubcutaneous.md): adaptation and limitations.
 

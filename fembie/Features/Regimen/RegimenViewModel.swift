@@ -6,7 +6,11 @@ import Observation
 final class RegimenViewModel {
     var selectedEster: EstradiolType = .estradiolEnanthate {
         didSet {
-            if let route = EsterRoutes.getRoutes(ester: selectedEster).first { selectedRoute = route }
+            if selectedEster == .estradiolValerate {
+                selectedRoute = .intramuscular
+            } else if let route = EsterRoutes.getRoutes(ester: selectedEster).first {
+                selectedRoute = route
+            }
         }
     }
     var selectedRoute: EstradiolRoute = .intramuscular

@@ -23,6 +23,9 @@ actor LevelsPredictionCalculator: LevelsPredictionCalculating {
         if regimen.ester == EstradiolType.estradiolGel.displayName, regimen.route == .transdermal {
             return TransdermalGelModel()
         }
+        if regimen.ester == EstradiolType.estradiolValerate.displayName, regimen.route == .intramuscular {
+            return ValerateIntramuscularModel()
+        }
         guard regimen.ester == EstradiolType.estradiolEnanthate.displayName else { return nil }
         switch regimen.route {
         case .intramuscular: return EnanthateIntramuscularModel()

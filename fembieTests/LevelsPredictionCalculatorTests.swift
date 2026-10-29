@@ -108,6 +108,11 @@ struct LevelsPredictionCalculatorTests {
         input.route = .intramuscular
         input.ester = "Estradiol Valerate (EV)"
         await model.refresh(input: LevelsPredictionInput(regimen: input), now: start)
+        #expect(model.current != nil)
+        #expect(model.modelIdentifier == ValerateIntramuscularModel().modelIdentifier)
+        #expect(model.message == nil)
+        input.route = .subcutaneous
+        await model.refresh(input: LevelsPredictionInput(regimen: input), now: start)
         #expect(model.current == nil)
         #expect(model.message != nil)
     }
