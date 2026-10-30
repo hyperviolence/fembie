@@ -16,35 +16,43 @@ struct LevelsChart: View {
         VStack(alignment: .leading) {
             Chart {
                 if showsRateOfChange {
-                    LinePlot(
-                        points.filter { $0.timestamp <= now },
-                        x: .value("Time", \.timestamp),
-                        y: .value("Value", \.rateOfChangePicogramsPerMilliliterPerHour)
-                    )
-                    .foregroundStyle(.tint)
+                    ForEach(points.filter { $0.timestamp <= now }, id: \.timestamp) { point in
+                        LineMark(
+                            x: .value("Time", point.timestamp),
+                            y: .value("Value", point.rateOfChangePicogramsPerMilliliterPerHour),
+                            series: .value("Period", "Past")
+                        )
+                        .foregroundStyle(.tint)
+                    }
 
-                    LinePlot(
-                        points.filter { $0.timestamp >= now },
-                        x: .value("Time", \.timestamp),
-                        y: .value("Value", \.rateOfChangePicogramsPerMilliliterPerHour)
-                    )
-                    .foregroundStyle(.tint)
-                    .lineStyle(StrokeStyle(dash: [5, 4]))
+                    ForEach(points.filter { $0.timestamp >= now }, id: \.timestamp) { point in
+                        LineMark(
+                            x: .value("Time", point.timestamp),
+                            y: .value("Value", point.rateOfChangePicogramsPerMilliliterPerHour),
+                            series: .value("Period", "Projected")
+                        )
+                        .foregroundStyle(.tint)
+                        .lineStyle(StrokeStyle(lineCap: .round, dash: [1, 5]))
+                    }
                 } else {
-                    LinePlot(
-                        points.filter { $0.timestamp <= now },
-                        x: .value("Time", \.timestamp),
-                        y: .value("Value", \.estradiolPicogramsPerMilliliter)
-                    )
-                    .foregroundStyle(.tint)
+                    ForEach(points.filter { $0.timestamp <= now }, id: \.timestamp) { point in
+                        LineMark(
+                            x: .value("Time", point.timestamp),
+                            y: .value("Value", point.estradiolPicogramsPerMilliliter),
+                            series: .value("Period", "Past")
+                        )
+                        .foregroundStyle(.tint)
+                    }
 
-                    LinePlot(
-                        points.filter { $0.timestamp >= now },
-                        x: .value("Time", \.timestamp),
-                        y: .value("Value", \.estradiolPicogramsPerMilliliter)
-                    )
-                    .foregroundStyle(.tint)
-                    .lineStyle(StrokeStyle(dash: [5, 4]))
+                    ForEach(points.filter { $0.timestamp >= now }, id: \.timestamp) { point in
+                        LineMark(
+                            x: .value("Time", point.timestamp),
+                            y: .value("Value", point.estradiolPicogramsPerMilliliter),
+                            series: .value("Period", "Projected")
+                        )
+                        .foregroundStyle(.tint)
+                        .lineStyle(StrokeStyle(lineCap: .round, dash: [1, 5]))
+                    }
                 }
 
                 if let currentPoint = points.first(where: { $0.timestamp == now }),
