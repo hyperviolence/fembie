@@ -11,9 +11,7 @@ final class LabResultsViewModel {
     }
     var test: LabTest = .e2 {
         didSet {
-            if !test.unit.contains(unit) {
-                unit = test.unit.first ?? ""
-            }
+            unit = test.unit.first ?? ""
         }
     }
     var value = ""

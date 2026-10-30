@@ -23,14 +23,42 @@ final class FembieUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testOpeningNotificationColdLaunchesIntoWellbeing() async throws {
         let app = XCUIApplication()
+        app.launchArguments.append("--schedule-notification-navigation-test")
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let allowButton = springboard.alerts.buttons["Allow"]
+        if allowButton.waitForExistence(timeout: 2) {
+            allowButton.tap()
+        }
+
+        // Give the app time to register the request before terminating it.
+        try await Task.sleep(for: .seconds(1))
+        app.terminate()
+        springboard.activate()
+
+        let notification = springboard.staticTexts["Fembie Notification Navigation Test"]
+        XCTAssertTrue(
+            notification.waitForExistence(timeout: 10),
+            "The test notification was not delivered."
+        )
+        notification.tap()
+
+        XCTAssertTrue(
+            app.wait(for: .runningForeground, timeout: 5),
+            "Tapping the notification did not cold-launch the app."
+        )
+        let wellbeingTab = app.tabBars.buttons["Wellbeing"]
+        XCTAssertTrue(
+            wellbeingTab.waitForExistence(timeout: 5),
+            "The app did not display its tab bar after notification launch."
+        )
+        XCTAssertTrue(
+            wellbeingTab.isSelected,
+            "The notification did not navigate to the Wellbeing tab."
+        )
     }
 
     @MainActor

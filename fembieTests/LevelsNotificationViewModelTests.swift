@@ -90,7 +90,7 @@ struct LevelsNotificationViewModelTests {
         await model.refresh(input: LevelsPredictionInput(regimen: regimen), now: now)
         #expect(scheduler.events.isEmpty)
         model.preferences.kinds = [.e2Peak]
-        regimen.ester = "Estradiol Valerate (EV)"
+        regimen.route = .oral
         await model.refresh(input: LevelsPredictionInput(regimen: regimen), now: now)
         #expect(scheduler.events.isEmpty)
         #expect(model.message?.contains("supported regimen") == true)

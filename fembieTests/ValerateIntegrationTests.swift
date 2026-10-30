@@ -67,9 +67,9 @@ struct ValerateIntegrationTests {
         let valerate = try Regimen(id: UUID(), ester: EstradiolType.estradiolValerate.displayName,
             doseMilligramsOfEster: 4, route: .intramuscular, intervalHours: 168,
             effectiveFrom: start, effectiveUntil: nil, timeZoneIdentifier: "UTC")
-        var enanthate = valerate
-        enanthate.id = UUID()
-        enanthate.ester = EstradiolType.estradiolEnanthate.displayName
+        let enanthate = try Regimen(id: UUID(), ester: EstradiolType.estradiolEnanthate.displayName,
+            doseMilligramsOfEster: 4, route: .intramuscular, intervalHours: 168,
+            effectiveFrom: start, effectiveUntil: nil, timeZoneIdentifier: "UTC")
         let now = start.addingTimeInterval(3 * 86_400)
         let calculator = LevelsPredictionCalculator()
         let combined = try await calculator.predict(regimens: [valerate, enanthate], now: now)

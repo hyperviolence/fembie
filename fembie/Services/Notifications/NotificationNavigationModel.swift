@@ -49,17 +49,37 @@ final class NotificationCenterDelegate: NSObject, UNUserNotificationCenterDelega
 
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
     }
 
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        guard response.actionIdentifier == UNNotificationDefaultActionIdentifier else { return }
-        let identifier = response.notification.request.identifier
-        await navigation.openNotification(identifier: identifier)
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping @Sendable () -> Void
+    ) {
+        handleNotificationResponse(
+            actionIdentifier: response.actionIdentifier,
+            notificationIdentifier: response.notification.request.identifier,
+            completionHandler: completionHandler
+        )
+    }
+
+    nonisolated func handleNotificationResponse(
+        actionIdentifier: String,
+        notificationIdentifier: String,
+        completionHandler: @escaping @Sendable () -> Void
+    ) {
+        guard actionIdentifier == UNNotificationDefaultActionIdentifier else {
+            completionHandler()
+            return
+        }
+
+        Task { @MainActor [navigation] in
+            navigation.openNotification(identifier: notificationIdentifier)
+            completionHandler()
+        }
     }
 }
