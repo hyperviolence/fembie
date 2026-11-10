@@ -17,8 +17,7 @@ struct RegimenListSection: View {
                     Button {
                         onEdit(regimen)
                     } label: {
-                        RegimenListRow(regimen: regimen, now: model.now,
-                            isSelected: regimen.id == model.editingRegimenID)
+                        RegimenListRow(regimen: regimen, now: model.now)
                     }
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -55,7 +54,6 @@ struct RegimenListSection: View {
 private struct RegimenListRow: View {
     let regimen: Regimen
     let now: Date
-    let isSelected: Bool
 
     var body: some View {
         HStack {
@@ -69,7 +67,6 @@ private struct RegimenListRow: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if isSelected { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
             Image(systemName: "chevron.right").foregroundStyle(.tertiary)
         }
         .contentShape(.rect)
