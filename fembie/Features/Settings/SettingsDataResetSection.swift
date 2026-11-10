@@ -14,13 +14,13 @@ struct SettingsDataResetSection: View {
 
     var body: some View {
         Section {
-            Button("Reset regimen data...", systemImage: "trash", role: .destructive) {
+            Button("Reset local regimen data...", systemImage: "trash", role: .destructive) {
                 confirmRegimenReset = true
             }
             .disabled(isResetting || regimen.isBusy)
-            .confirmationDialog("Reset regimen data?", isPresented: $confirmRegimenReset,
+            .confirmationDialog("Reset local regimen data?", isPresented: $confirmRegimenReset,
                                 titleVisibility: .visible) {
-                Button("Reset regimen data", role: .destructive) {
+                Button("Reset local regimen data", role: .destructive) {
                     reset(regimenData: true)
                 }
                 Button("Cancel", role: .cancel) { }
@@ -28,13 +28,13 @@ struct SettingsDataResetSection: View {
                 Text("This permanently deletes your saved regimen and all dose history and adjustments, and cancels its level alerts and dose reminders. This cannot be undone.")
             }
 
-            Button("Reset wellbeing data...", systemImage: "trash", role: .destructive) {
+            Button("Reset local wellbeing data...", systemImage: "trash", role: .destructive) {
                 confirmWellbeingReset = true
             }
             .disabled(isResetting || wellbeing.isBusy)
-            .confirmationDialog("Reset wellbeing data?", isPresented: $confirmWellbeingReset,
+            .confirmationDialog("Reset local wellbeing data?", isPresented: $confirmWellbeingReset,
                                 titleVisibility: .visible) {
-                Button("Reset wellbeing data", role: .destructive) {
+                Button("Reset local wellbeing data", role: .destructive) {
                     reset(regimenData: false)
                 }
                 Button("Cancel", role: .cancel) { }

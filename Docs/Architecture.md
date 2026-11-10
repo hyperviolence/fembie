@@ -94,7 +94,52 @@ ones, and refresh on changes and app activity. Up to 32 upcoming reminders
 share the notification budget with level alerts and the daily check-in reminder;
 a common coordinator serializes all updates.
 
-There is no cloud sync, regimen-version history, or legacy-data migration.
+## Optional iCloud sync
+
+Settings contains an iCloud Sync toggle, disabled by default on each device.
+When enabled, the app exchanges a versioned JSON snapshot through a CKAsset in
+the user's private CloudKit database. The container is
+`iCloud.com.hyperviolet.fembie`; the record type is `FembieSnapshot`, its
+`snapshot` field is an Asset, and the fixed record name is `fembie-sync-v1`.
+There is no public database or sharing.
+
+Sync includes every stored regimen (with nested dose events), separate injection
+events, check-ins, labs, calibration, and the three reminder preference groups.
+The existing JSON export format remains unchanged. Notification authorization
+and the iCloud opt-in remain device-specific.
+
+Sync runs on activation and every 30 seconds while active, and Settings offers
+Sync Now. It does not run in the background. Offline changes remain in local
+JSON files and are retried on activation or the next scheduled/manual attempt.
+Disabling sync retains both local and cloud data.
+
+A persisted baseline supports a three-way merge by record ID, including
+deletions. Independent record edits combine; concurrent changes to the same
+record prefer the version already in iCloud. A regimen and its nested events
+are one record. CloudKit conditional saves retry server-record conflicts.
+Edits made locally during a network request are preserved for the next sync.
+A local recovery journal is written before applying downloads. Incoming data
+is validated before replacing local stores. The checkpoint binds sync to the
+original iCloud account; account changes pause sync rather than uploading data
+to the replacement account. A missing established cloud snapshot is treated as
+an error rather than a request to delete local records.
+
+### CloudKit release setup and verification
+
+The app target includes CloudKit entitlements for both build configurations.
+The signing team must register/associate the container with the app identifier.
+Before distributing a production build, create the `FembieSnapshot` record type
+with the `snapshot` Asset field in the development environment (a development
+sync can create it), then deploy that schema to production in CloudKit Console.
+No query indexes are required because the record is fetched by its fixed ID.
+
+Verify on two signed-in devices using the same iCloud account: opt in on each,
+add different records offline, reopen both apps, and confirm convergence.
+Also verify deletions, reminder preferences, sign-out/account change, disabling
+during a request, and offline retries. Simulator unit tests use an injected
+transport and cannot verify Apple's provisioning or live CloudKit service.
+
+There is no regimen-version history or legacy-data migration.
 Wellbeing can schedule a repeating daily check-in reminder at a chosen local
 time. Turning it off cancels the reminder. Predictions are estimates, not
 blood-test measurements.

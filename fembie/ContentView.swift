@@ -35,6 +35,7 @@ struct ContentView_Previews: PreviewProvider {
             .environment(CheckInViewModel(repository: repository))
             .environment(LabResultsViewModel(repository: repository))
             .environment(DataExportViewModel(repository: repository))
+            .environment(ICloudSyncViewModel(repository: repository))
             .environment(LevelsNotificationViewModel())
             .environment(CheckInReminderViewModel())
             .environment(RegimenNotificationViewModel())

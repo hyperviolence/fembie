@@ -4,8 +4,11 @@ struct PrivacyNoticeView: View {
     var body: some View {
         ScrollView {
             Text("""
-                All data collected by fembie, including push notifications, is stored and processed locally on user's device. Nothing gets shared with third-party, with no intentions of doing so in future.
-                Any future possibility of storing the user's data in iCloud will be optional, and the user will need to opt-in to have this feature enabled.
+                fembie stores and processes your data locally by default. Notifications are scheduled on your device.
+
+                If you manually enable iCloud Sync in Settings, your regimens, dose history, wellbeing check-ins, lab results, and saved preferences are also stored in your private iCloud account through Apple’s CloudKit service and synced to your other opted-in devices. Notification permission remains specific to each device.
+
+                You can turn off sync at any time. This stops future syncs; it does not delete data already stored on your devices or in iCloud. fembie does not send your data to an analytics or advertising service.
                 """)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .textSelection(.enabled)

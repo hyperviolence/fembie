@@ -159,6 +159,40 @@ actor FileTrackingRepository: TrackingRepository {
         checkInsCache = checkIns
     }
 
+    func syncSnapshot() throws -> SyncSnapshot {
+        var snapshot = SyncSnapshot()
+        for value in try regimens() { try snapshot.insert(value, key: "regimen/\(value.id)") }
+        for value in try injectionEvents() { try snapshot.insert(value, key: "event/\(value.id)") }
+        for value in try checkIns() { try snapshot.insert(value, key: "checkIn/\(value.id)") }
+        for value in try labResults() { try snapshot.insert(value, key: "lab/\(value.id)") }
+        return snapshot
+    }
+
+    /// Rebase edits made during network requests before replacing local data.
+    func applySyncSnapshot(_ remote: SyncSnapshot, captured: SyncSnapshot) throws -> Bool {
+        try remote.validate()
+        let current = try syncSnapshot()
+        let merged = try SyncSnapshot.merge(local: remote, remote: current, baseline: captured)
+        let regimens = try merged.values(Regimen.self, prefix: "regimen/")
+        let events = try merged.values(InjectionEvent.self, prefix: "event/")
+        let checkIns = try merged.values(CheckIn.self, prefix: "checkIn/")
+        let labs = try merged.values(LabResult.self, prefix: "lab/")
+        for value in regimens { try value.validate() }
+        for value in events { try value.validate() }
+        for value in checkIns { try value.validate() }
+        for value in labs { try value.validate() }
+        let oldLabs = try labResults()
+        do {
+            try persist(labs, to: .labResults)
+            try replaceTrackingData(regimens: regimens, injectionEvents: events, checkIns: checkIns)
+        } catch {
+            try? persist(oldLabs, to: .labResults)
+            throw error
+        }
+        labResultsCache = labs
+        return current.records != merged.records.filter { !$0.key.hasPrefix("preference/") }
+    }
+
     private func load<Element: Decodable>(from store: Store) throws -> [Element] {
         let data: Data
         do {

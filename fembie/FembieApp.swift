@@ -6,6 +6,7 @@ struct FembieApp: App {
     @State private var checkInModel: CheckInViewModel
     @State private var labResultsModel: LabResultsViewModel
     @State private var dataExportModel: DataExportViewModel
+    @State private var cloudSync: ICloudSyncViewModel
     @State private var notifications = LevelsNotificationViewModel()
     @State private var regimenNotifications = RegimenNotificationViewModel()
     @State private var checkInReminder = CheckInReminderViewModel()
@@ -15,6 +16,7 @@ struct FembieApp: App {
 
     init() {
         let repository = FileTrackingRepository()
+        _cloudSync = State(initialValue: ICloudSyncViewModel(repository: repository))
         let navigation = NotificationNavigationModel()
         _navigation = State(initialValue: navigation)
         notificationCenterDelegate = NotificationCenterDelegate(navigation: navigation)
@@ -31,6 +33,29 @@ struct FembieApp: App {
                 .environment(checkInModel)
                 .environment(labResultsModel)
                 .environment(dataExportModel)
+                .environment(cloudSync)
+                .task(id: "\(scenePhase)-\(cloudSync.enabled)") {
+                    guard scenePhase == .active, cloudSync.enabled else { return }
+                    while !Task.isCancelled {
+                        await cloudSync.sync()
+                        do { try await Task.sleep(for: .seconds(30)) }
+                        catch { return }
+                    }
+                }
+                .task(id: cloudSync.revision) {
+                    guard cloudSync.revision > 0 else { return }
+                    await regimenModel.load()
+                    await checkInModel.reloadCheckIns()
+                    await labResultsModel.load()
+                    labResultsModel.useLatestE2ResultForCalibration = UserDefaults.standard.bool(forKey: "useLatestE2ResultForLevelsCalibration")
+                    let decoder = JSONDecoder()
+                    notifications.preferences = UserDefaults.standard.data(forKey: "levelsNotificationPreferences")
+                        .flatMap { try? decoder.decode(LevelsNotificationPreferences.self, from: $0) } ?? .init()
+                    regimenNotifications.preferences = UserDefaults.standard.data(forKey: "regimenNotificationPreferences")
+                        .flatMap { try? decoder.decode(RegimenNotificationPreferences.self, from: $0) } ?? .init()
+                    checkInReminder.preferences = UserDefaults.standard.data(forKey: "checkInReminderPreferences")
+                        .flatMap { try? decoder.decode(CheckInReminderPreferences.self, from: $0) } ?? .init()
+                }
                 .environment(notifications)
                 .environment(checkInReminder)
                 .environment(regimenNotifications)

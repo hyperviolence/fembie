@@ -22,6 +22,7 @@ struct SettingsView: View {
                     }
                 }
 
+                SettingsICloudSyncSection()
                 SettingsDataExportSection()
                 SettingsDataResetSection()
             }
