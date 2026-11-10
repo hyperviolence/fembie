@@ -9,11 +9,12 @@ struct RegimenListSection: View {
 
     var body: some View {
         Section {
-            if model.regimens.isEmpty {
+            let regimens = model.recurringRegimens
+            if regimens.isEmpty {
                 ContentUnavailableView("No saved regimens", systemImage: "cross.case",
                     description: Text("Add a regimen to generate a dose schedule."))
             } else {
-                ForEach(model.regimens) { regimen in
+                ForEach(regimens) { regimen in
                     Button {
                         onEdit(regimen)
                     } label: {

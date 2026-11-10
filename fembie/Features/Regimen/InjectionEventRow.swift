@@ -18,6 +18,15 @@ struct InjectionEventRow: View {
                 Text(event.scheduledAt, format: .dateTime.day().month().year().hour().minute())
                     .font(.headline)
             }
+            if event.isIndividual {
+                if let treatment = model.regimens.first(where: { $0.id == event.regimenID }) {
+                    Text("\(treatment.ester) · \(treatment.route.displayName)")
+                        .font(.caption)
+                }
+                Text("Individual dose · \(event.doseMilligramsOfEster, format: .number) mg")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Label(status.title, systemImage: status.systemImage)
                 .foregroundColor(status.color)
             if case .moved(let actualAt) = event.adjustment {

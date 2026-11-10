@@ -32,10 +32,10 @@ nonisolated struct DataImportValidator: Sendable {
     ]
     private static let regimenKeys: Set<String> = [
         "id", "ester", "doseMilligramsOfEster", "route", "intervalHours", "effectiveFrom",
-        "effectiveUntil", "timeZoneIdentifier", "injectionEvents", "color"
+        "effectiveUntil", "timeZoneIdentifier", "injectionEvents", "color", "individualDoseOnly"
     ]
     private static let eventKeys: Set<String> = [
-        "id", "regimenID", "scheduledAt", "doseMilligramsOfEster", "adjustment"
+        "id", "regimenID", "scheduledAt", "doseMilligramsOfEster", "adjustment", "isIndividual"
     ]
     private static let checkInKeys: Set<String> = ["id", "recordedAt", "mood", "libido", "energy", "customRatings"]
 
@@ -150,7 +150,7 @@ nonisolated struct DataImportValidator: Sendable {
                   return nested.regimenID == topLevel.regimenID &&
                       nested.scheduledAt == topLevel.scheduledAt &&
                       nested.doseMilligramsOfEster == topLevel.doseMilligramsOfEster &&
-                      nested.adjustment == topLevel.adjustment
+                      nested.adjustment == topLevel.adjustment && nested.isIndividual == topLevel.isIndividual
               }) else {
             throw DataImportError.inconsistentInjectionEvent
         }

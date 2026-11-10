@@ -33,12 +33,14 @@ nonisolated struct LevelsPredictionInput: Equatable, Sendable {
     private static func regimensEqual(_ left: Regimen, _ right: Regimen) -> Bool {
         left.id == right.id && left.ester == right.ester && left.route == right.route
             && left.doseMilligramsOfEster == right.doseMilligramsOfEster
+            && left.isRecurring == right.isRecurring
             && left.intervalHours == right.intervalHours && left.effectiveFrom == right.effectiveFrom
             && left.effectiveUntil == right.effectiveUntil
             && left.injectionEvents.count == right.injectionEvents.count
             && zip(left.injectionEvents, right.injectionEvents).allSatisfy { a, b in
                 a.id == b.id && a.regimenID == b.regimenID && a.scheduledAt == b.scheduledAt
                     && a.doseMilligramsOfEster == b.doseMilligramsOfEster && a.adjustment == b.adjustment
+                    && a.isIndividual == b.isIndividual
             }
     }
 }

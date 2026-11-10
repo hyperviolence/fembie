@@ -20,14 +20,18 @@ extension LevelsPredictionCalculating {
 /// Runs numerical work off the main actor; never changes saved regimens.
 actor LevelsPredictionCalculator: LevelsPredictionCalculating {
     nonisolated static func model(for regimen: Regimen) -> (any PredictionModel)? {
-        if regimen.ester == EstradiolType.estradiolGel.displayName, regimen.route == .transdermal {
+        model(ester: regimen.ester, route: regimen.route)
+    }
+
+    nonisolated static func model(ester: String, route: EstradiolRoute) -> (any PredictionModel)? {
+        if ester == EstradiolType.estradiolGel.displayName, route == .transdermal {
             return TransdermalGelModel()
         }
-        if regimen.ester == EstradiolType.estradiolValerate.displayName, regimen.route == .intramuscular {
+        if ester == EstradiolType.estradiolValerate.displayName, route == .intramuscular {
             return ValerateIntramuscularModel()
         }
-        guard regimen.ester == EstradiolType.estradiolEnanthate.displayName else { return nil }
-        switch regimen.route {
+        guard ester == EstradiolType.estradiolEnanthate.displayName else { return nil }
+        switch route {
         case .intramuscular: return EnanthateIntramuscularModel()
         case .subcutaneous: return EnanthateSubcutaneousModel()
         default: return nil
@@ -48,13 +52,18 @@ actor LevelsPredictionCalculator: LevelsPredictionCalculating {
         let anchor = alignSamplesToHour
             ? Date(timeIntervalSince1970: floor(now.timeIntervalSince1970 / 3_600) * 3_600) : now
         let requestedEnd = anchor.addingTimeInterval(Double(horizon.futureDays) * 86_400)
+        let individualDates = regimens.flatMap(\.injectionEvents).filter { $0.isIndividual && $0.adjustment != .skipped }
+            .map { event in
+                if case .moved(let actualAt) = event.adjustment { return actualAt }
+                return event.scheduledAt
+            }
         let start = horizon == .detail
-            ? regimens.map(\.effectiveFrom).min() ?? anchor
+            ? (regimens.map(\.effectiveFrom) + individualDates).min() ?? anchor
             : anchor.addingTimeInterval(-14 * 86_400)
         let end: Date
         if horizon == .detail, regimens.allSatisfy({ $0.effectiveUntil != nil }),
            let latestEnd = regimens.compactMap(\.effectiveUntil).max() {
-            end = min(latestEnd, requestedEnd)
+            end = min(max(latestEnd, individualDates.max() ?? latestEnd), requestedEnd)
         } else {
             end = requestedEnd
         }

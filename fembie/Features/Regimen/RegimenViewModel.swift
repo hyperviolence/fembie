@@ -56,10 +56,11 @@ final class RegimenViewModel {
         effectiveUntil = now.addingTimeInterval(90 * 86_400)
     }
 
+    var recurringRegimens: [Regimen] { regimens.filter(\.isRecurring) }
     var activeRegimens: [Regimen] { regimens.filter { $0.isEffective(at: now) } }
     var savedRegimen: Regimen? {
         editingRegimenID.flatMap { id in regimens.first { $0.id == id } }
-            ?? activeRegimens.last ?? regimens.last(where: { $0.effectiveFrom <= now }) ?? regimens.first
+            ?? activeRegimens.last ?? recurringRegimens.last(where: { $0.effectiveFrom <= now }) ?? recurringRegimens.first
     }
     var isEditing: Bool { editingRegimenID != nil }
     var validationMessage: String? {
@@ -181,6 +182,73 @@ final class RegimenViewModel {
         }
     }
 
+    /// Saves standalone treatment metadata and exactly one event, with no recurrence.
+    func addStandaloneDose(ester: EstradiolType, route: EstradiolRoute, date: Date,
+                           doseText: String, color: RegimenColor?) async throws {
+        guard !isBusy, hasLoaded else { throw CocoaError(.fileWriteUnknown) }
+        guard EsterRoutes.getRoutes(ester: ester).contains(route),
+              LevelsPredictionCalculator.model(ester: ester.displayName, route: route) != nil else {
+            throw LevelsPredictionError.unsupportedRegimen
+        }
+        guard let amount = parseNumber(doseText), amount.isFinite, amount > 0 else {
+            throw RegimenValidationError.invalidDose
+        }
+        refreshTime()
+        var treatment = try Regimen(id: UUID(), ester: ester.displayName, doseMilligramsOfEster: amount,
+                                    route: route, intervalHours: 24, effectiveFrom: date, effectiveUntil: nil,
+                                    timeZoneIdentifier: TimeZone.current.identifier, color: color)
+        treatment.individualDoseOnly = true
+        treatment.injectionEvents = [
+            InjectionEvent(id: UUID(), regimenID: treatment.id, scheduledAt: date,
+                           doseMilligramsOfEster: amount, adjustment: date <= now ? .confirmed : .none,
+                           isIndividual: true)
+        ]
+        isBusy = true
+        defer { isBusy = false }
+        try await repository.save(treatment)
+        regimens.append(treatment)
+        regimens.sort { $0.effectiveFrom < $1.effectiveFrom }
+        let allEvents = regimens.flatMap(\.injectionEvents)
+        if date <= now {
+            pastCount = max(pastCount, allEvents.filter { $0.scheduledAt >= date && $0.scheduledAt <= now }.count)
+        } else {
+            futureCount = max(futureCount, allEvents.filter { $0.scheduledAt > now && $0.scheduledAt <= date }.count)
+        }
+    }
+
+    /// Adds a single administration without changing the recurrence or other doses.
+    func addIndividualDose(regimenID: UUID, date: Date, doseText: String) async throws {
+        guard !isBusy, hasLoaded,
+              let index = regimens.firstIndex(where: { $0.id == regimenID }) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        guard let amount = parseNumber(doseText), amount.isFinite, amount > 0 else {
+            throw RegimenValidationError.invalidDose
+        }
+        refreshTime()
+        let event = InjectionEvent(id: UUID(), regimenID: regimenID, scheduledAt: date,
+                                   doseMilligramsOfEster: amount,
+                                   adjustment: date <= now ? .confirmed : .none, isIndividual: true)
+        try event.validate(for: regimenID)
+        var updated = regimens[index]
+        guard updated.injectionEvents.count < InjectionSchedule.maximumEventCount else {
+            throw RegimenValidationError.tooManyEvents
+        }
+        updated.injectionEvents.append(event)
+        updated.injectionEvents.sort { $0.scheduledAt < $1.scheduledAt }
+        isBusy = true
+        defer { isBusy = false }
+        try await repository.save(updated)
+        regimens[index] = updated
+        // Reveal the added dose even when its date is outside the initial visible page.
+        let allEvents = regimens.flatMap(\.injectionEvents)
+        if date <= now {
+            pastCount = max(pastCount, allEvents.filter { $0.scheduledAt >= date && $0.scheduledAt <= now }.count)
+        } else {
+            futureCount = max(futureCount, allEvents.filter { $0.scheduledAt > now && $0.scheduledAt <= date }.count)
+        }
+    }
+
     func setAdjustment(eventID: UUID, to adjustment: InjectionAdjustment) async {
         guard hasLoaded, !isBusy,
               let regimenIndex = regimens.firstIndex(where: { $0.injectionEvents.contains { $0.id == eventID } }),
@@ -226,7 +294,7 @@ final class RegimenViewModel {
             futureCount += 3
             return
         }
-        guard let last = regimen.injectionEvents.last,
+        guard let last = regimen.injectionEvents.last(where: { !$0.isIndividual }),
               regimen.injectionEvents.count < InjectionSchedule.maximumEventCount else { return }
         isBusy = true
         defer { isBusy = false }
@@ -251,7 +319,7 @@ final class RegimenViewModel {
         if let existing = regimens.first(where: { $0.id == id }),
            existing.effectiveFrom == draft.effectiveFrom, existing.intervalHours == draft.intervalHours {
             draft.injectionEvents = existing.injectionEvents.filter { event in
-                draft.effectiveUntil.map { event.scheduledAt < $0 } ?? true
+                !event.isIndividual && (draft.effectiveUntil.map { event.scheduledAt < $0 } ?? true)
             }.map { event in
                 var updated = InjectionEvent(id: event.id, regimenID: event.regimenID,
                     scheduledAt: event.scheduledAt, doseMilligramsOfEster: dose)
@@ -259,6 +327,8 @@ final class RegimenViewModel {
                 return updated
             }
         }
+        // Individual doses retain their recorded amount and time across recurrence edits.
+        draft.injectionEvents += regimens.first(where: { $0.id == id })?.injectionEvents.filter(\.isIndividual) ?? []
         return draft
     }
 

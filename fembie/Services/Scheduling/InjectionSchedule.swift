@@ -9,6 +9,7 @@ nonisolated struct InjectionSchedule: Sendable {
         guard end.timeIntervalSinceReferenceDate.isFinite else {
             throw RegimenValidationError.invalidSchedule
         }
+        guard regimen.isRecurring else { return 0 }
         let horizon = min(end, regimen.effectiveUntil ?? end)
         guard horizon >= regimen.effectiveFrom else { return 0 }
         let seconds = regimen.intervalHours * 3600
@@ -38,9 +39,16 @@ nonisolated struct InjectionSchedule: Sendable {
     /// Reuses saved identities and corrections, including when the horizon grows.
     func extending(_ regimen: Regimen, through end: Date) throws -> Regimen {
         let count = try eventCount(for: regimen, through: end)
+        guard regimen.isRecurring else {
+            guard regimen.injectionEvents.count <= Self.maximumEventCount else {
+                throw RegimenValidationError.tooManyEvents
+            }
+            return regimen
+        }
         let seconds = regimen.intervalHours * 3600
         var existing: [Int: InjectionEvent] = [:]
-        for event in regimen.injectionEvents where event.regimenID == regimen.id {
+        let individualEvents = regimen.injectionEvents.filter(\.isIndividual)
+        for event in regimen.injectionEvents where event.regimenID == regimen.id && !event.isIndividual {
             if let until = regimen.effectiveUntil, event.scheduledAt >= until { continue }
             let position = event.scheduledAt.timeIntervalSince(regimen.effectiveFrom) / seconds
             guard position.isFinite, position >= 0,
@@ -65,10 +73,10 @@ nonisolated struct InjectionSchedule: Sendable {
                 existing[index] = event
             }
         }
-        guard existing.count <= Self.maximumEventCount else {
+        guard existing.count + individualEvents.count <= Self.maximumEventCount else {
             throw RegimenValidationError.tooManyEvents
         }
-        result.injectionEvents = existing.values.sorted { $0.scheduledAt < $1.scheduledAt }
+        result.injectionEvents = (Array(existing.values) + individualEvents).sorted { $0.scheduledAt < $1.scheduledAt }
         return result
     }
 

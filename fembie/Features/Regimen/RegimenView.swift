@@ -4,6 +4,7 @@ struct RegimenView: View {
     @Environment(RegimenViewModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
     @State private var isPresentingEditor = false
+    @State private var isAddingIndividualDose = false
 
     var body: some View {
         @Bindable var model = model
@@ -24,6 +25,10 @@ struct RegimenView: View {
                     isPresentingEditor = true
                 }
                 Section("Dose events") {
+                    Button("Add individual dose", systemImage: "plus") {
+                        isAddingIndividualDose = true
+                    }
+                    .disabled(model.isBusy || !model.hasLoaded)
                     if model.hasMorePast {
                         Button("Show more past doses…", action: model.showMorePast)
                     }
@@ -55,6 +60,9 @@ struct RegimenView: View {
             .alert("Regimen", isPresented: $model.showAlert) {
                 Button("OK", role: .cancel) { }
             } message: { Text(model.alertMessage) }
+            .sheet(isPresented: $isAddingIndividualDose) {
+                AddIndividualDoseView()
+            }
             .sheet(isPresented: $isPresentingEditor) {
                 NavigationStack {
                     Form {

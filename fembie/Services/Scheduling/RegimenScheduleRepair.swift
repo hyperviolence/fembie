@@ -3,7 +3,8 @@ import Foundation
 /// Repairs the earlier edit that replaced recurrence dates with confirmed actual times.
 nonisolated enum RegimenScheduleRepair {
     static func restoringScheduledDates(in regimen: Regimen) -> Regimen? {
-        guard (try? regimen.validate()) != nil,
+        guard !regimen.injectionEvents.contains(where: \.isIndividual),
+              (try? regimen.validate()) != nil,
               regimen.injectionEvents.count <= InjectionSchedule.maximumEventCount,
               Set(regimen.injectionEvents.map(\.id)).count == regimen.injectionEvents.count else { return nil }
         var result = regimen

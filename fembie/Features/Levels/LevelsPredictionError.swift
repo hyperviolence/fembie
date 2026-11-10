@@ -7,7 +7,7 @@ nonisolated enum LevelsPredictionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedRegimen:
-            "No prediction model is available for the saved formulation and route. Intramuscular and subcutaneous EEn and transdermal estradiol gel are supported."
+            "No prediction model is available for the saved formulation and route. Intramuscular and subcutaneous EEn, intramuscular EV, and transdermal estradiol gel are supported."
         case .invalidCalibration(let message): message
         }
     }

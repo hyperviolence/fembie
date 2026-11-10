@@ -12,6 +12,10 @@ nonisolated struct Regimen: Identifiable, Codable, Sendable {
     var timeZoneIdentifier: String
     var injectionEvents: [InjectionEvent] = []
     var color: RegimenColor?
+    /// Optional for compatibility with JSON written before standalone doses existed.
+    var individualDoseOnly: Bool?
+
+    var isRecurring: Bool { individualDoseOnly != true }
 
     init(id: UUID, ester: String, doseMilligramsOfEster: Double, route: EstradiolRoute, intervalHours: Double,
          effectiveFrom: Date, effectiveUntil: Date?, timeZoneIdentifier: String, color: RegimenColor? = nil) throws {
@@ -47,12 +51,15 @@ nonisolated struct Regimen: Identifiable, Codable, Sendable {
               Set(injectionEvents.map(\.id)).count == injectionEvents.count else {
             throw RegimenValidationError.invalidSchedule
         }
+        guard isRecurring || injectionEvents.allSatisfy(\.isIndividual) else {
+            throw RegimenValidationError.invalidSchedule
+        }
         for event in injectionEvents {
             try event.validate(for: id)
         }
     }
 
     func isEffective(at date: Date) -> Bool {
-        effectiveFrom <= date && (effectiveUntil.map { date < $0 } ?? true)
+        isRecurring && effectiveFrom <= date && (effectiveUntil.map { date < $0 } ?? true)
     }
 }
