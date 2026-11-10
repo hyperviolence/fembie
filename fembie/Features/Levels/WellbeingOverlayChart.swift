@@ -20,6 +20,8 @@ struct WellbeingOverlayChart: View {
             : checkIns.endIndex
         let visibleCheckIns = checkIns[extendedStartIndex..<extendedEndIndex]
 
+        let customSeries = CustomWellbeingChartSeries.make(from: checkIns)
+
         Canvas { context, size in
             let duration = dateRange.upperBound.timeIntervalSince(dateRange.lowerBound)
             guard duration > 0 else { return }
@@ -56,10 +58,36 @@ struct WellbeingOverlayChart: View {
                     context.fill(symbol, with: .color(series.1))
                 }
             }
+            for series in customSeries {
+                let positions = series.visibleSamples(in: dateRange).map { sample in
+                    CGPoint(
+                        x: sample.date.timeIntervalSince(dateRange.lowerBound) / duration * size.width,
+                        y: (1 - sample.value / 10) * size.height
+                    )
+                }
+                var line = Path()
+                for (index, position) in positions.enumerated() {
+                    if index == 0 { line.move(to: position) }
+                    else { line.addLine(to: position) }
+                }
+                context.stroke(line, with: .color(series.color), style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
+                for position in positions {
+                    var diamond = Path()
+                    diamond.move(to: CGPoint(x: position.x, y: position.y - 4))
+                    diamond.addLine(to: CGPoint(x: position.x + 4, y: position.y))
+                    diamond.addLine(to: CGPoint(x: position.x, y: position.y + 4))
+                    diamond.addLine(to: CGPoint(x: position.x - 4, y: position.y))
+                    diamond.closeSubpath()
+                    context.fill(diamond, with: .color(series.color))
+                }
+            }
         }
-        .accessibilityLabel("Mood, libido, and energy at recorded check-in times on a zero to ten scale")
+        .clipped()
+        .accessibilityLabel("Wellbeing ratings, including custom metrics, at recorded check-in times on a zero to ten scale")
         .accessibilityValue(visibleCheckIns.map { checkIn in
-            "\(checkIn.recordedAt.formatted(date: .abbreviated, time: .shortened)): mood \(checkIn.mood.formatted()), libido \(checkIn.libido.formatted()), energy \(checkIn.energy.formatted())"
+            let customValues = checkIn.customRatings.map { "\($0.label): \($0.value.formatted())" }
+            return "\(checkIn.recordedAt.formatted(date: .abbreviated, time: .shortened)): mood \(checkIn.mood.formatted()), libido \(checkIn.libido.formatted()), energy \(checkIn.energy.formatted())"
+                + (customValues.isEmpty ? "" : ", " + customValues.joined(separator: ", "))
         }.joined(separator: ". "))
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 import Charts
 
 struct CheckInView: View {
+    @State private var isAddingMetric = false
     @State private var mood = 5.0
     @State private var libido = 5.0
     @State private var energy = 5.0
@@ -24,6 +25,7 @@ struct CheckInView: View {
                     .datePickerStyle(.compact)
                     .labelsHidden()
                 }
+                CustomWellbeingSection(isAddingMetric: $isAddingMetric)
                 Section {
                     Button(model.isSaving ? "Saving…" : model.isBusy ? "Loading check-ins…" : "Save check-in") {
                         let selectedDate = date
@@ -128,15 +130,21 @@ struct CheckInView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                if !model.checkIns.isEmpty {
+                    CustomWellbeingHistory(metrics: model.customRatings, dailyAverages: model.dailyAverages())
+                }
                 CheckInReminderSection()
             }
             .navigationTitle("Wellbeing")
+            .sheet(isPresented: $isAddingMetric) {
+                AddWellbeingMetricView()
+            }
             .task {
                 await model.loadCheckIns()
-                if !model.checkIns.isEmpty {
-                    mood = model.checkIns.last!.mood
-                    energy = model.checkIns.last!.energy
-                    libido = model.checkIns.last!.libido
+                if let latest = model.checkIns.last {
+                    mood = latest.mood
+                    energy = latest.energy
+                    libido = latest.libido
                 }
             }
         }

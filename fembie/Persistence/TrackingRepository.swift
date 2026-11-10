@@ -16,4 +16,5 @@ nonisolated protocol TrackingRepository: Sendable {
     func resetRegimenData() async throws
     func resetWellbeingData() async throws
     func deleteLabResult(id: UUID) async throws
+    func deleteCustomMetric(id: UUID) async throws
 }

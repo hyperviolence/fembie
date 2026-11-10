@@ -6,6 +6,7 @@ nonisolated struct DailyCheckInAverage: Identifiable, Sendable {
     let mood: Double
     let libido: Double
     let energy: Double
+    var customRatings: [CustomWellbeingRating] = []
 
     var id: Date { date }
 }

@@ -132,6 +132,16 @@ actor FileTrackingRepository: TrackingRepository {
         injectionEventsCache = values
     }
 
+    func deleteCustomMetric(id: UUID) throws {
+        var values = try checkIns()
+        for index in values.indices {
+            values[index].customRatings.removeAll { $0.id == id }
+        }
+        // Commit the entire change atomically before updating the in-memory cache.
+        try persist(values, to: .checkIns)
+        checkInsCache = values
+    }
+
     func save(_ checkIn: CheckIn) throws {
         try checkIn.validate()
         var values = try checkIns()

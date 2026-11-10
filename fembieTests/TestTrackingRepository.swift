@@ -97,6 +97,13 @@ actor TestTrackingRepository: TrackingRepository {
         storedInjectionEvents = []
     }
 
+    func deleteCustomMetric(id: UUID) throws {
+        if failWrites { throw CocoaError(.fileWriteNoPermission) }
+        for index in storedCheckIns.indices {
+            storedCheckIns[index].customRatings.removeAll { $0.id == id }
+        }
+    }
+
     func resetWellbeingData() throws {
         if failWrites { throw CocoaError(.fileWriteNoPermission) }
         storedCheckIns = []

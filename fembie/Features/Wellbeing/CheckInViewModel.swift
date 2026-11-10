@@ -10,6 +10,52 @@ final class CheckInViewModel {
     private(set) var saveError: String?
     private(set) var checkIns: [CheckIn] = []
     private(set) var historyError: String?
+    var customRatings: [CustomWellbeingRating] = []
+    private(set) var metricError: String?
+    private(set) var metricDeletionError: String?
+
+    func deleteCustomMetric(id: UUID) async {
+        guard !isBusy else { return }
+        isBusy = true
+        metricDeletionError = nil
+        defer { isBusy = false }
+        do {
+            try await repository.deleteCustomMetric(id: id)
+            customRatings.removeAll { $0.id == id }
+            for index in checkIns.indices {
+                checkIns[index].customRatings.removeAll { $0.id == id }
+            }
+        } catch {
+            metricDeletionError = String(localized: "Could not delete the custom metric. Please try again.")
+        }
+    }
+
+    @discardableResult
+    func addCustomMetric(label: String, lowLabel: String, highLabel: String) -> Bool {
+        let rating = CustomWellbeingRating(
+            id: UUID(),
+            label: label.trimmingCharacters(in: .whitespacesAndNewlines),
+            lowLabel: lowLabel.trimmingCharacters(in: .whitespacesAndNewlines),
+            highLabel: highLabel.trimmingCharacters(in: .whitespacesAndNewlines),
+            value: 5
+        )
+        do {
+            try rating.validate()
+            let existingLabels = ["Mood", "Libido", "Energy"] + customRatings.map(\.label)
+            guard !existingLabels.contains(where: {
+                $0.compare(rating.label, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+            }) else {
+                metricError = String(localized: "A metric with this name already exists.")
+                return false
+            }
+            customRatings.append(rating)
+            metricError = nil
+            return true
+        } catch {
+            metricError = String(localized: "Enter a name and both scale labels, each up to 100 characters.")
+            return false
+        }
+    }
     @ObservationIgnored private let repository: any TrackingRepository
     @ObservationIgnored private var hasLoadedCheckIns = false
     
@@ -31,6 +77,7 @@ final class CheckInViewModel {
     func reloadCheckIns() async {
         guard !isBusy else { return }
         hasLoadedCheckIns = false
+        customRatings = []
         await loadCheckIns()
     }
 
@@ -48,7 +95,9 @@ final class CheckInViewModel {
             isSaving = false
         }
         do {
-            let checkIn = CheckIn(id: UUID(), recordedAt: date, mood: mood, libido: libido, energy: energy)
+            let checkIn = CheckIn(id: UUID(), recordedAt: date, mood: mood, libido: libido, energy: energy,
+                                  customRatings: customRatings)
+            try checkIn.validate()
             try await repository.save(checkIn)
             lastSavedCheckInDate = date
         } catch {
@@ -71,6 +120,8 @@ final class CheckInViewModel {
         defer { isBusy = false }
         try await repository.resetWellbeingData()
         checkIns = []
+        customRatings = []
+        metricError = nil
         hasLoadedCheckIns = true
         lastSavedCheckInDate = nil
         saveError = nil
@@ -85,7 +136,14 @@ final class CheckInViewModel {
                 date: date,
                 mood: entries.reduce(0) { $0 + $1.mood } / count,
                 libido: entries.reduce(0) { $0 + $1.libido } / count,
-                energy: entries.reduce(0) { $0 + $1.energy } / count
+                energy: entries.reduce(0) { $0 + $1.energy } / count,
+                customRatings: Dictionary(grouping: entries.flatMap(\.customRatings), by: \.id)
+                    .values.compactMap { ratings in
+                        guard var average = ratings.last else { return nil }
+                        average.value = ratings.reduce(0) { $0 + $1.value } / Double(ratings.count)
+                        return average
+                    }
+                    .sorted { $0.id.uuidString < $1.id.uuidString }
             )
         }
         .sorted { $0.date < $1.date }
@@ -96,6 +154,16 @@ final class CheckInViewModel {
         let sortedCheckIns = await Task.detached {
             loadedCheckIns.sorted { $0.recordedAt < $1.recordedAt }
         }.value
+        // Reuse saved metric definitions, including metrics absent from the latest check-in.
+        var ratingsByID: [UUID: CustomWellbeingRating] = [:]
+        for checkIn in sortedCheckIns {
+            for rating in checkIn.customRatings { ratingsByID[rating.id] = rating }
+        }
+        // Keep unsaved form edits when refreshing after a save.
+        for rating in customRatings { ratingsByID[rating.id] = rating }
+        customRatings = ratingsByID.values.sorted {
+            $0.label.localizedStandardCompare($1.label) == .orderedAscending
+        }
         checkIns = sortedCheckIns
         hasLoadedCheckIns = true
         historyError = nil

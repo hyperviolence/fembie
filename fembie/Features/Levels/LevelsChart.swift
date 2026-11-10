@@ -133,7 +133,8 @@ struct LevelsChart: View {
             .accessibilityLabel(showsRateOfChange ? "Estimated estradiol rate of change" : "Estimated estradiol levels")
             .accessibilityValue("Past fourteen days and next fourteen days. Dashed line shows projected levels.")
             if showWellbeing {
-                LevelsWellbeingLegend(showsRateOfChange: showsRateOfChange)
+                LevelsWellbeingLegend(showsRateOfChange: showsRateOfChange,
+                                      customSeries: CustomWellbeingChartSeries.make(from: wellbeing))
             }
         }
     }

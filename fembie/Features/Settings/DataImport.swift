@@ -37,7 +37,7 @@ nonisolated struct DataImportValidator: Sendable {
     private static let eventKeys: Set<String> = [
         "id", "regimenID", "scheduledAt", "doseMilligramsOfEster", "adjustment"
     ]
-    private static let checkInKeys: Set<String> = ["id", "recordedAt", "mood", "libido", "energy"]
+    private static let checkInKeys: Set<String> = ["id", "recordedAt", "mood", "libido", "energy", "customRatings"]
 
     func decodeAndValidate(_ data: Data) throws -> DataExport {
         guard data.count <= Self.maximumFileSize else { throw DataImportError.fileTooLarge }
@@ -98,7 +98,14 @@ nonisolated struct DataImportValidator: Sendable {
             for event in nested { try validateEventObject(event) }
         }
         for event in events { try validateEventObject(event) }
-        for checkIn in checkIns { try rejectUnknownKeys(in: checkIn, allowed: Self.checkInKeys) }
+        for checkIn in checkIns {
+            try rejectUnknownKeys(in: checkIn, allowed: Self.checkInKeys)
+            if let ratings = checkIn["customRatings"] as? [[String: Any]] {
+                for rating in ratings {
+                    try rejectUnknownKeys(in: rating, allowed: ["id", "label", "lowLabel", "highLabel", "value"])
+                }
+            }
+        }
     }
 
     private func validateEventObject(_ event: [String: Any]) throws {
