@@ -11,9 +11,10 @@ nonisolated struct Regimen: Identifiable, Codable, Sendable {
     var effectiveUntil: Date?
     var timeZoneIdentifier: String
     var injectionEvents: [InjectionEvent] = []
+    var color: RegimenColor?
 
     init(id: UUID, ester: String, doseMilligramsOfEster: Double, route: EstradiolRoute, intervalHours: Double,
-         effectiveFrom: Date, effectiveUntil: Date?, timeZoneIdentifier: String) throws {
+         effectiveFrom: Date, effectiveUntil: Date?, timeZoneIdentifier: String, color: RegimenColor? = nil) throws {
         self.id = id
         self.ester = ester
         self.route = route
@@ -22,6 +23,7 @@ nonisolated struct Regimen: Identifiable, Codable, Sendable {
         self.effectiveFrom = effectiveFrom
         self.effectiveUntil = effectiveUntil
         self.timeZoneIdentifier = timeZoneIdentifier
+        self.color = color
         try validate()
     }
 

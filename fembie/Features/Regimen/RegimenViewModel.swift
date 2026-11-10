@@ -14,6 +14,7 @@ final class RegimenViewModel {
         }
     }
     var selectedRoute: EstradiolRoute = .intramuscular
+    var selectedColor: RegimenColor?
     var dose = ""
     var interval = ""
     var intervalUnit: RegimenIntervalUnit = .days {
@@ -117,6 +118,7 @@ final class RegimenViewModel {
 
     func beginAddingRegimen() {
         editingRegimenID = nil
+        selectedColor = nil
         selectedEster = .estradiolEnanthate
         selectedRoute = .intramuscular
         dose = ""
@@ -129,6 +131,7 @@ final class RegimenViewModel {
 
     func beginEditing(_ regimen: Regimen) {
         editingRegimenID = regimen.id
+        selectedColor = regimen.color
         selectedEster = EstradiolType.allCases.first { $0.displayName == regimen.ester } ?? .estradiolEnanthate
         selectedRoute = regimen.route
         dose = regimen.doseMilligramsOfEster.formatted(.number.locale(locale).grouping(.never))
@@ -244,7 +247,7 @@ final class RegimenViewModel {
         var draft = try Regimen(id: id, ester: selectedEster.displayName, doseMilligramsOfEster: dose,
             route: selectedRoute, intervalHours: intervalValue * Double(intervalUnit.rawValue),
             effectiveFrom: firstInjection, effectiveUntil: hasEffectiveUntil ? effectiveUntil : nil,
-            timeZoneIdentifier: TimeZone.current.identifier)
+            timeZoneIdentifier: TimeZone.current.identifier, color: selectedColor)
         if let existing = regimens.first(where: { $0.id == id }),
            existing.effectiveFrom == draft.effectiveFrom, existing.intervalHours == draft.intervalHours {
             draft.injectionEvents = existing.injectionEvents.filter { event in

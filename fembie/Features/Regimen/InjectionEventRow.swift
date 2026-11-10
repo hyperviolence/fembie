@@ -9,8 +9,15 @@ struct InjectionEventRow: View {
     var body: some View {
         let status = InjectionStatus(event: event, now: model.now)
         VStack(alignment: .leading, spacing: 15) {
-            Text(event.scheduledAt, format: .dateTime.day().month().year().hour().minute())
-                .font(.headline)
+            HStack {
+                if let color = model.regimens.first(where: { $0.id == event.regimenID })?.color {
+                    Image(systemName: "circle.fill")
+                        .foregroundStyle(color.color)
+                        .accessibilityLabel(Text(color.label))
+                }
+                Text(event.scheduledAt, format: .dateTime.day().month().year().hour().minute())
+                    .font(.headline)
+            }
             Label(status.title, systemImage: status.systemImage)
                 .foregroundColor(status.color)
             if case .moved(let actualAt) = event.adjustment {

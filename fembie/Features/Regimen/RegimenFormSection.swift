@@ -13,6 +13,19 @@ struct RegimenFormSection: View {
                     Text(ester.displayName).tag(ester)
                 }
             }
+            Picker("Event color", selection: $model.selectedColor) {
+                Text("Default").tag(nil as RegimenColor?)
+                ForEach(RegimenColor.allCases) { color in
+                    Label {
+                        Text(color.label)
+                    } icon: {
+                        Image(systemName: "circle.fill")
+                            .foregroundStyle(color.color)
+                    }
+                    .tag(Optional(color))
+                }
+            }
+            .pickerStyle(.navigationLink)
             Picker("Route", selection: $model.selectedRoute) {
                 ForEach(EsterRoutes.getRoutes(ester: model.selectedEster).filter { enabledRoutes.contains($0) }) { route in
                     Text(route.displayName).tag(route)

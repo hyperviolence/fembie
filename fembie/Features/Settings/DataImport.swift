@@ -32,7 +32,7 @@ nonisolated struct DataImportValidator: Sendable {
     ]
     private static let regimenKeys: Set<String> = [
         "id", "ester", "doseMilligramsOfEster", "route", "intervalHours", "effectiveFrom",
-        "effectiveUntil", "timeZoneIdentifier", "injectionEvents"
+        "effectiveUntil", "timeZoneIdentifier", "injectionEvents", "color"
     ]
     private static let eventKeys: Set<String> = [
         "id", "regimenID", "scheduledAt", "doseMilligramsOfEster", "adjustment"
