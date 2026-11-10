@@ -4,6 +4,7 @@ import SwiftUI
 struct WellbeingOverlayChart: View {
     let checkIns: [CheckIn]
     let dateRange: ClosedRange<Date>
+    var filter = WellbeingChartFilter()
 
     var body: some View {
         let firstVisibleIndex = checkIns.firstIndex {
@@ -21,6 +22,7 @@ struct WellbeingOverlayChart: View {
         let visibleCheckIns = checkIns[extendedStartIndex..<extendedEndIndex]
 
         let customSeries = CustomWellbeingChartSeries.make(from: checkIns)
+            .filter { filter.showsCustomMetric(id: $0.id) }
 
         Canvas { context, size in
             let duration = dateRange.upperBound.timeIntervalSince(dateRange.lowerBound)
@@ -28,7 +30,8 @@ struct WellbeingOverlayChart: View {
             let series: [(KeyPath<CheckIn, Double>, Color)] = [
                 (\.mood, .pink), (\.libido, .purple), (\.energy, .orange)
             ]
-            for (index, series) in series.enumerated() {
+            let visibility = [filter.showsMood, filter.showsLibido, filter.showsEnergy]
+            for (index, series) in series.enumerated() where visibility[index] {
                 let positions = visibleCheckIns.map { checkIn in
                     CGPoint(
                         x: checkIn.recordedAt.timeIntervalSince(dateRange.lowerBound) / duration * size.width,
@@ -84,10 +87,7 @@ struct WellbeingOverlayChart: View {
         }
         .clipped()
         .accessibilityLabel("Wellbeing ratings, including custom metrics, at recorded check-in times on a zero to ten scale")
-        .accessibilityValue(visibleCheckIns.map { checkIn in
-            let customValues = checkIn.customRatings.map { "\($0.label): \($0.value.formatted())" }
-            return "\(checkIn.recordedAt.formatted(date: .abbreviated, time: .shortened)): mood \(checkIn.mood.formatted()), libido \(checkIn.libido.formatted()), energy \(checkIn.energy.formatted())"
-                + (customValues.isEmpty ? "" : ", " + customValues.joined(separator: ", "))
-        }.joined(separator: ". "))
+        .accessibilityValue(visibleCheckIns.map { filter.accessibilitySummary(for: $0) }
+            .filter { !$0.isEmpty }.joined(separator: ". "))
     }
 }

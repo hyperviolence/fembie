@@ -6,14 +6,17 @@ import Testing
 
 @MainActor
 struct WellbeingOverlayChartTests {
-    @Test func customMetricIsDrawnAtItsRecordedTimeAndRating() throws {
+    @Test(arguments: [true, false]) func customMetricIsDrawnAtItsRecordedTimeAndRating(isVisible: Bool) throws {
         let start = Date(timeIntervalSince1970: 0)
         let checkIn = CheckIn(id: UUID(), recordedAt: start.addingTimeInterval(3600),
                               mood: 1, libido: 2, energy: 3,
                               customRatings: [.init(id: UUID(), label: "Sleep", lowLabel: "Poor",
                                                     highLabel: "Restful", value: 7)])
+        var filter = WellbeingChartFilter()
+        let metricID = try #require(checkIn.customRatings.first?.id)
+        filter.setCustomMetric(id: metricID, isVisible: isVisible)
         let renderer = ImageRenderer(content:
-            WellbeingOverlayChart(checkIns: [checkIn], dateRange: start...start.addingTimeInterval(7200))
+            WellbeingOverlayChart(checkIns: [checkIn], dateRange: start...start.addingTimeInterval(7200), filter: filter)
                 .frame(width: 200, height: 100)
                 .background(.white)
                 .environment(\.colorScheme, .light)
@@ -40,7 +43,8 @@ struct WellbeingOverlayChartTests {
                 }
             }
         }
-        #expect(matches > 5)
+        if isVisible { #expect(matches > 5) }
+        else { #expect(matches == 0) }
     }
 
     @Test func checkInMarkersUseRecordedTimeInsteadOfMidnight() throws {

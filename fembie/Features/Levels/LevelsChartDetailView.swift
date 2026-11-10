@@ -10,6 +10,7 @@ struct LevelsChartDetailView: View {
 
     @State private var model = LevelsViewModel()
     @State private var selectedDate: Date?
+    @State private var wellbeingFilter = WellbeingChartFilter()
     @State private var mapsWellbeing: Bool
 
     init(
@@ -33,6 +34,7 @@ struct LevelsChartDetailView: View {
                     showsRateOfChange: showsRateOfChange,
                     showWellbeing: mapsWellbeing,
                     wellbeing: checkInModel.checkIns,
+                    wellbeingFilter: wellbeingFilter,
                     isScrollable: true,
                     selectedPoint: model.selectedPoint,
                     selectedDate: $selectedDate
@@ -40,6 +42,12 @@ struct LevelsChartDetailView: View {
                 .frame(maxHeight: .infinity)
 
                 LevelsWellbeingMappingControl(isEnabled: $mapsWellbeing)
+                if mapsWellbeing {
+                    WellbeingMarkerFilterMenu(
+                        filter: $wellbeingFilter,
+                        customSeries: CustomWellbeingChartSeries.make(from: checkInModel.checkIns)
+                    )
+                }
 
                 Text("Swipe horizontally to explore from the start of the regimen through the next 90 days.")
                     .font(.caption)

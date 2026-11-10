@@ -8,6 +8,7 @@ struct LevelsChart: View {
     var showsRateOfChange = false
     var showWellbeing = false
     var wellbeing: [CheckIn] = []
+    var wellbeingFilter = WellbeingChartFilter()
     var isScrollable = false
     var selectedPoint: PredictionPoint? = nil
     var selectedDate: Binding<Date?>? = nil
@@ -117,7 +118,7 @@ struct LevelsChart: View {
                             if let start = proxy.value(atX: visibleStartX, as: Date.self),
                                let end = proxy.value(atX: visibleEndX, as: Date.self),
                                start < end {
-                                WellbeingOverlayChart(checkIns: wellbeing, dateRange: start...end)
+                                WellbeingOverlayChart(checkIns: wellbeing, dateRange: start...end, filter: wellbeingFilter)
                                     .frame(width: containerFrame.width, height: containerFrame.height)
                                     .position(x: containerFrame.midX, y: containerFrame.midY)
                                     .allowsHitTesting(false)
@@ -134,7 +135,8 @@ struct LevelsChart: View {
             .accessibilityValue("Past fourteen days and next fourteen days. Dashed line shows projected levels.")
             if showWellbeing {
                 LevelsWellbeingLegend(showsRateOfChange: showsRateOfChange,
-                                      customSeries: CustomWellbeingChartSeries.make(from: wellbeing))
+                                      customSeries: CustomWellbeingChartSeries.make(from: wellbeing),
+                                      filter: wellbeingFilter)
             }
         }
     }
