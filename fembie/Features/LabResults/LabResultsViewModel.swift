@@ -64,7 +64,9 @@ final class LabResultsViewModel {
             guard let number = try? Double(text, format: .number.locale(locale), lenient: false) else {
                 throw LabResultValidationError.invalidValue
             }
-            let result = LabResult(id: UUID(), test: test, value: number, unit: unit, recordedAt: recordedAt)
+            let standardized = test.standardizedValue(number, from: unit)
+            let result = LabResult(id: UUID(), test: test, value: standardized.value,
+                                   unit: standardized.unit, recordedAt: recordedAt)
             try result.validate()
             try await repository.save(result)
             didSave = true

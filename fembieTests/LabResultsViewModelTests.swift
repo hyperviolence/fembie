@@ -109,6 +109,22 @@ struct LabResultsViewModelTests {
         }
     }
 
+    @Test func pmolPerLiterE2ResultsAreStoredAsPicoGramsPerMilliliter() async throws {
+        let directory = URL.temporaryDirectory.appending(path: "LabResultsTests-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let model = LabResultsViewModel(repository: FileTrackingRepository(baseURL: directory),
+                                        locale: Locale(identifier: "en_US"))
+        model.test = .e2
+        model.unit = "pmol/L"
+        model.value = "100"
+        await model.save()
+
+        let saved = try await FileTrackingRepository(baseURL: directory).labResults()
+        let result = try #require(saved.first)
+        #expect(result.value == 27.238)
+        #expect(result.unit == "pg/mL")
+    }
+
     @Test func historicalUnitsArePreservedWhenNewResultsAreSaved() async throws {
         let directory = URL.temporaryDirectory.appending(path: "LabResultsTests-\(UUID())")
         defer { try? FileManager.default.removeItem(at: directory) }
