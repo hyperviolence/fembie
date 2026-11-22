@@ -11,6 +11,11 @@ struct SettingsView: View {
                         Label("About fembie...", systemImage: "info.circle")
                     }
                     NavigationLink {
+                        DonationView()
+                    } label: {
+                        Label("Make a donation", systemImage: "heart")
+                    }
+                    NavigationLink {
                         SafetyNoticeView()
                     } label: {
                         Label("Safety notice", systemImage: "exclamationmark.shield")
