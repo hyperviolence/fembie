@@ -8,15 +8,17 @@ struct InjectionEventRow: View {
 
     var body: some View {
         let status = InjectionStatus(event: event, now: model.now)
+        let regimenColor = model.regimens.first(where: { $0.id == event.regimenID })?.color
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-                if let color = model.regimens.first(where: { $0.id == event.regimenID })?.color {
+                if let regimenColor {
                     Image(systemName: "circle.fill")
-                        .foregroundStyle(color.color)
-                        .accessibilityLabel(Text(color.label))
+                        .foregroundStyle(regimenColor.color)
+                        .accessibilityLabel(Text(regimenColor.label))
                 }
                 Text(event.scheduledAt, format: .dateTime.day().month().year().hour().minute())
                     .font(.headline)
+                    .foregroundStyle(regimenColor?.color ?? .primary)
             }
             if event.isIndividual {
                 if let treatment = model.regimens.first(where: { $0.id == event.regimenID }) {
