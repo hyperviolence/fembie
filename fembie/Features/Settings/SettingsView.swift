@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Binding var isPresentingTutorial: Bool
+
     var body: some View {
         NavigationStack {
             List {
@@ -24,6 +26,12 @@ struct SettingsView: View {
                         PrivacyNoticeView()
                     } label: {
                         Label("Privacy notice", systemImage: "hand.raised")
+                    }
+                }
+
+                Section("Help") {
+                    Button("Show tutorial again", systemImage: "questionmark.circle") {
+                        isPresentingTutorial = true
                     }
                 }
 

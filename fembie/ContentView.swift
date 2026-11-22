@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     @Bindable var navigation: NotificationNavigationModel
+    @AppStorage("hasCompletedFirstRunTutorial") private var hasCompletedTutorial = false
+    @State private var isPresentingTutorial = false
 
     var body: some View {
         TabView(selection: $navigation.selectedTab) {
@@ -18,10 +20,19 @@ struct ContentView: View {
                 RegimenView()
             }
             Tab("Settings", systemImage: "gearshape", value: .settings) {
-                SettingsView()
+                SettingsView(isPresentingTutorial: $isPresentingTutorial)
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .fullScreenCover(isPresented: $isPresentingTutorial) {
+            TutorialView {
+                hasCompletedTutorial = true
+                isPresentingTutorial = false
+            }
+        }
+        .onAppear {
+            isPresentingTutorial = !hasCompletedTutorial
+        }
     }
 }
 
