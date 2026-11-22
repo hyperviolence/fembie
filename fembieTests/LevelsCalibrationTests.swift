@@ -84,6 +84,65 @@ struct LevelsCalibrationTests {
         #expect(levels.calibrationMessage == nil)
     }
 
+    @MainActor @Test func detailHorizonUsesTheSavedCalibration() async throws {
+        let regimen = try regimen()
+        let labDate = start.addingTimeInterval(3 * 86400 + 1800)
+        let now = labDate.addingTimeInterval(86400 + 900)
+        let referencePoints = try await LevelsPredictionCalculator().predict(
+            regimen: regimen,
+            now: labDate,
+            horizon: .detail
+        )
+        let reference = try #require(referencePoints.first { $0.timestamp == labDate })
+        let lab = LabResult(
+            id: UUID(),
+            test: .e2,
+            value: reference.estradiolPicogramsPerMilliliter + 75,
+            unit: "pg/mL",
+            recordedAt: labDate
+        )
+
+        let model = LevelsViewModel()
+        await model.refresh(
+            input: LevelsPredictionInput(
+                regimen: regimen,
+                calibrationEnabled: true,
+                calibrationResult: lab
+            ),
+            now: now,
+            horizon: .detail
+        )
+
+        let adjusted = try #require(model.points.first { $0.timestamp == labDate })
+        #expect(abs(adjusted.estradiolPicogramsPerMilliliter - lab.value) < 1e-9)
+        #expect(model.calibrationMessage?.contains("Adjusted using") == true)
+    }
+
+    @Test func chartHorizonAnchorsCalibrationOutsideVisibleWindow() async throws {
+        let regimen = try regimen()
+        let calculator = LevelsPredictionCalculator()
+        let labDate = start.addingTimeInterval(86_400)
+        let now = start.addingTimeInterval(30 * 86_400)
+        let reference = try #require(
+            await calculator.predict(regimen: regimen, now: labDate).first { $0.timestamp == labDate }
+        )
+        let lab = LabResult(
+            id: UUID(),
+            test: .e2,
+            value: reference.estradiolPicogramsPerMilliliter + 75,
+            unit: "pg/mL",
+            recordedAt: labDate
+        )
+
+        let raw = try await calculator.predict(regimen: regimen, now: now)
+        let adjusted = try await calculator.predict(regimen: regimen, now: now, calibrationResult: lab)
+        let rawNow = try #require(raw.first { $0.timestamp == now })
+        let adjustedNow = try #require(adjusted.first { $0.timestamp == now })
+
+        #expect(abs(adjustedNow.estradiolPicogramsPerMilliliter
+            - rawNow.estradiolPicogramsPerMilliliter - 75) < 1e-9)
+    }
+
     @Test func negativeCalibrationOffsetClampsLevelsAtZero() async throws {
         var regimen = try regimen()
         // Keep the next injection outside the prediction window so levels decline.

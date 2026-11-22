@@ -57,9 +57,19 @@ actor LevelsPredictionCalculator: LevelsPredictionCalculating {
                 if case .moved(let actualAt) = event.adjustment { return actualAt }
                 return event.scheduledAt
             }
-        let start = horizon == .detail
+        let requestedStart = horizon == .detail
             ? (regimens.map(\.effectiveFrom) + individualDates).min() ?? anchor
             : anchor.addingTimeInterval(-14 * 86_400)
+        let treatmentStart = regimens.map(\.effectiveFrom).min() ?? anchor
+        let start: Date
+        if let calibrationResult,
+           calibrationResult.recordedAt < requestedStart,
+           calibrationResult.recordedAt >= treatmentStart,
+           calibrationResult.recordedAt <= now {
+            start = calibrationResult.recordedAt
+        } else {
+            start = requestedStart
+        }
         let end: Date
         if horizon == .detail, regimens.allSatisfy({ $0.effectiveUntil != nil }),
            let latestEnd = regimens.compactMap(\.effectiveUntil).max() {
@@ -71,6 +81,10 @@ actor LevelsPredictionCalculator: LevelsPredictionCalculating {
         // Hourly points; chart calls include now exactly. Include all preceding doses.
         let sampleCount = Int((end.timeIntervalSince(start) / 3_600).rounded(.down))
         var timestamps = (0...sampleCount).map { start.addingTimeInterval(Double($0) * 3_600) }
+        if requestedStart >= start, requestedStart <= end, !timestamps.contains(requestedStart) {
+            timestamps.append(requestedStart)
+            timestamps.sort()
+        }
         if now >= start, now <= end, !timestamps.contains(now) {
             timestamps.append(now)
             timestamps.sort()
@@ -132,7 +146,9 @@ actor LevelsPredictionCalculator: LevelsPredictionCalculating {
                         - (baseline?.rateOfChangePicogramsPerMilliliterPerHour ?? 0))
             }
         }
-        guard let calibrationResult else { return combined }
+        guard let calibrationResult else {
+            return combined.filter { $0.timestamp >= requestedStart }
+        }
         try calibrationResult.validate()
         guard calibrationResult.test == .e2,
               calibrationResult.unit.lowercased() == "pg/ml" else {
@@ -146,12 +162,14 @@ actor LevelsPredictionCalculator: LevelsPredictionCalculating {
             < abs($1.timestamp.timeIntervalSince(calibrationResult.recordedAt)) }
         guard let reference else { return combined }
         let offset = calibrationResult.value - reference.estradiolPicogramsPerMilliliter
-        return combined.map { point in
-            let adjustedLevel = point.estradiolPicogramsPerMilliliter + offset
-            return PredictionPoint(timestamp: point.timestamp,
-                                   estradiolPicogramsPerMilliliter: max(0, adjustedLevel),
-                                   rateOfChangePicogramsPerMilliliterPerHour: adjustedLevel <= 0
-                                    ? 0 : point.rateOfChangePicogramsPerMilliliterPerHour)
-        }
+        return combined
+            .filter { $0.timestamp >= requestedStart }
+            .map { point in
+                let adjustedLevel = point.estradiolPicogramsPerMilliliter + offset
+                return PredictionPoint(timestamp: point.timestamp,
+                                       estradiolPicogramsPerMilliliter: max(0, adjustedLevel),
+                                       rateOfChangePicogramsPerMilliliterPerHour: adjustedLevel <= 0
+                                        ? 0 : point.rateOfChangePicogramsPerMilliliterPerHour)
+            }
     }
 }

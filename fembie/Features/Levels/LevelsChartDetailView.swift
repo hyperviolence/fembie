@@ -49,6 +49,12 @@ struct LevelsChartDetailView: View {
                     )
                 }
 
+                if let calibrationMessage = model.calibrationMessage {
+                    Text(calibrationMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Text("Swipe horizontally to explore from the start of the regimen through the next 90 days.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
