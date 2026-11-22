@@ -152,7 +152,11 @@ struct CheckInView: View {
 
     private func rating(_ title: String, value: Binding<Double>, low: String, high: String) -> some View {
         VStack(alignment: .leading) {
-            Text(title)
+            HStack {
+                Text(title)
+                Spacer()
+                Text(value.wrappedValue, format: .number.precision(.fractionLength(0)))
+            }
             Slider(value: value, in: 0...10, step: 1)
                 .accessibilityLabel(title)
             HStack {
