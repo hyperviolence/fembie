@@ -36,17 +36,23 @@ struct FembieApp: App {
                 .environment(cloudSync)
                 .task(id: "\(scenePhase)-\(cloudSync.enabled)") {
                     guard scenePhase == .active, cloudSync.enabled else { return }
+                    await labResultsModel.load()
+                    guard !Task.isCancelled else { return }
                     while !Task.isCancelled {
                         await cloudSync.sync()
                         do { try await Task.sleep(for: .seconds(30)) }
                         catch { return }
                     }
                 }
+                .task(id: scenePhase) {
+                    guard scenePhase == .active else { return }
+                    await labResultsModel.load()
+                }
                 .task(id: cloudSync.revision) {
                     guard cloudSync.revision > 0 else { return }
                     await regimenModel.load()
                     await checkInModel.reloadCheckIns()
-                    await labResultsModel.load()
+                    await labResultsModel.load(force: true)
                     labResultsModel.useLatestE2ResultForCalibration = UserDefaults.standard.bool(forKey: "useLatestE2ResultForLevelsCalibration")
                     let decoder = JSONDecoder()
                     notifications.preferences = UserDefaults.standard.data(forKey: "levelsNotificationPreferences")
@@ -91,7 +97,6 @@ struct FembieApp: App {
                     preferences: notifications.preferences)) {
                     guard scenePhase == .active else { return }
                     if !regimenModel.hasLoaded { await regimenModel.load() }
-                    await labResultsModel.load()
                     guard !Task.isCancelled else { return }
                     let input = LevelsPredictionInput(regimens: regimenModel.regimens,
                         calibrationEnabled: labResultsModel.useLatestE2ResultForCalibration,

@@ -45,6 +45,22 @@ struct LabResultsViewModelTests {
         #expect(model.visibleResults.count == 8)
     }
 
+    @Test func repeatedLoadsDoNotReadTheRepositoryAgainAfterInitialLoad() async {
+        let repository = TestTrackingRepository()
+        await repository.seed(labResults: [LabResult(id: UUID(), test: .e2, value: 100, recordedAt: .now)])
+        let model = LabResultsViewModel(repository: repository)
+
+        await model.load()
+        #expect(model.hasLoaded)
+        #expect(model.results.count == 1)
+
+        await repository.configure(failReads: true)
+        await model.load()
+
+        #expect(model.message == nil)
+        #expect(model.results.count == 1)
+    }
+
     @Test func invalidValuesDoNotWriteResults() async throws {
         let directory = URL.temporaryDirectory.appending(path: "LabResultsTests-\(UUID())")
         defer { try? FileManager.default.removeItem(at: directory) }

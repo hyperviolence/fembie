@@ -20,6 +20,7 @@ final class LabResultsViewModel {
     private(set) var results: [LabResult] = []
     private(set) var visibleCount = 3
     private(set) var isBusy = false
+    private(set) var hasLoaded = false
     private(set) var message: String?
     private(set) var didSave = false
 
@@ -41,12 +42,19 @@ final class LabResultsViewModel {
 
     func showMore() { visibleCount = min(visibleCount + 3, results.count) }
 
-    func load() async {
-        guard !isBusy else { return }
+    func load(force: Bool = false) async {
+        guard force || !hasLoaded else { return }
+        if isBusy {
+            while isBusy && !Task.isCancelled {
+                await Task.yield()
+            }
+            return
+        }
         isBusy = true
         defer { isBusy = false }
         do {
             try await refreshResults()
+            hasLoaded = true
             message = nil
         } catch {
             message = "Could not load lab results: \(error.localizedDescription)"

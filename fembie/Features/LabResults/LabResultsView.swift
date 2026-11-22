@@ -87,7 +87,6 @@ struct LabResultsView: View {
                 }
             }
             .navigationTitle("Lab results")
-            .task { await model.load() }
         }
     }
 }

@@ -108,7 +108,6 @@ struct LevelsView: View {
         }
         .task {
             if !regimenModel.hasLoaded { await regimenModel.load() }
-            await labResultsModel.load()
         }
         .task(id: LevelsPredictionInput(regimens: regimenModel.regimens,
                                        isActive: scenePhase == .active,
